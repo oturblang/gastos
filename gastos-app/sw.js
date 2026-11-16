@@ -1,7 +1,7 @@
 /* Service worker: guarda a app em cache para funcionar offline. Caminhos relativos (subpasta do GitHub Pages).
    Ao alterar qualquer ficheiro, aumenta o número de CACHE para os dispositivos receberem a nova versão. */
-const CACHE = 'gastos-v1';
-const FICHEIROS = ['./', './index.html', './styles.css', './js/util.js', './js/db.js', './js/app.js',
+const CACHE = 'gastos-v2';
+const FICHEIROS = ['./', './index.html', './styles.css', './js/util.js', './js/calc.js', './js/db.js', './js/app.js', './js/registo.js',
   './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FICHEIROS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => {

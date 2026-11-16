@@ -1,0 +1,172 @@
+'use strict';
+/* Resumo, tabela estilo Excel, página do dia e registo de movimentos. A lógica de cálculo está em calc.js. */
+const Registo = (() => {
+  const $ = id => document.getElementById(id);
+  const E = App.E;
+  const NOME = { ganho: 'Ganho', gasto: 'Gasto', investimento: 'Investimento', ajuste: 'Ajuste' };
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const catNome = id => { const c = E.cats.find(x => x.id === id); return c ? c.name + (c.archived ? ' (arquivada)' : '') : 'Sem categoria'; };
+  const dataCurta = iso => Calc.diaSemana(iso) + ' ' + iso.slice(8) + '/' + iso.slice(5, 7);
+  let diaAtual = null, editId = null;
+
+  async function recarregar() { await App.carregar(); App.atualizar(); }
+  /** Depois de guardar: recalcula tudo e avisa (sem bloquear) se a poupança ficou negativa. */
+  async function depoisDeGuardar(txt) {
+    await recarregar();
+    const p = Calc.total(E.settings, E.movs, '9999-12-31').poup;
+    App.dizer(p < 0 ? txt + ' Atenção: a poupança ficou negativa (' + Util.fmtEUR(p) + ').' : txt);
+  }
+
+  // ---------- Resumo ----------
+  function desenharResumo() {
+    const hoje = Util.todayISO(), t = Calc.total(E.settings, E.movs, hoje), g = Calc.gastosMes(E.movs, hoje);
+    $('vResumo').innerHTML = '<h2>Resumo</h2><dl class="stats">' +
+      '<div><dt>Poupança atual</dt><dd>' + Util.fmtEUR(t.poup) + '</dd></div>' +
+      '<div><dt>Capital investido</dt><dd>' + Util.fmtEUR(t.capital) + '</dd></div>' +
+      '<div><dt>Gastos do mês</dt><dd>' + Util.fmtEUR(g) + '</dd></div></dl>' +
+      (E.movs.length ? '' : '<p>Ainda não registaste nenhum movimento. Define os valores iniciais em Definições e carrega em «+ Registar» para começar.</p>');
+  }
+
+  // ---------- Tabela ----------
+  function intervalo() {
+    const s = E.settings, hoje = Util.todayISO();
+    let de = s.tableFrom || s.startDate, ate = s.tableTo || hoje;
+    for (const m of E.movs) { if (m.date < de) de = m.date; if (m.date > ate) ate = m.date; }
+    if (hoje > ate) ate = hoje;
+    if (ate < de) ate = de;
+    return { de, ate, n: Calc.diasEntre(de, ate) + 1 };
+  }
+  const RUB = [['ganho', 'Ganhos', true], ['gasto', 'Gastos', true], ['investimento', 'Investido', true], ['ajuste', 'Ajustes', true],
+    ['sobra', 'Sobra do dia', false], ['poup', 'Poupança', false], ['capital', 'Capital investido', false]];
+  function desenharTabela() {
+    const { de, n } = intervalo(), cols = Calc.serie(E.settings, E.movs, de, n), hoje = Util.todayISO();
+    let h = '<thead><tr><th scope="col">Rubrica</th>' + cols.map(c => '<th scope="col"' + (c.date === hoje ? ' class="hoje"' : '') + ' data-date="' + c.date + '">' +
+      '<button type="button" class="dia" data-dia="' + c.date + '">' + dataCurta(c.date) + (c.date === hoje ? '<small>hoje</small>' : '') + '</button></th>').join('') + '</tr></thead><tbody>';
+    for (const [k, nome, editavel] of RUB) {
+      h += '<tr><th scope="row">' + nome + '</th>';
+      for (const c of cols) {
+        const cl = c.date === hoje ? ' class="hoje"' : '';
+        if (!editavel) h += '<td' + cl + '>' + Util.fmtEUR(k === 'sobra' ? c.sobra : k === 'poup' ? c.poup : c.capital) + '</td>';
+        else if (c.n[k] > 1) h += '<td' + cl + '><button type="button" class="dia" data-dia="' + c.date + '" aria-label="' + nome + ' ' + Util.isoToPt(c.date) + ': ' + c.n[k] + ' movimentos, abrir o dia">' + Util.fmtEUR(c.v[k]) + '</button></td>';
+        else h += '<td' + cl + '><input data-date="' + c.date + '" data-tipo="' + k + '" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="' + nome + ' ' + Util.isoToPt(c.date) + '" value="' + (c.n[k] ? Util.toInput(c.v[k]) : '') + '"></td>';
+      }
+      h += '</tr>';
+    }
+    $('tab').innerHTML = h + '</tbody>';
+  }
+  /** Editar uma célula: sem movimento cria um; com um movimento altera-o; vazio/0 apaga (com confirmação). */
+  async function celula(inp) {
+    const { date, tipo } = inp.dataset, c = Util.parseMoney(inp.value);
+    const existentes = E.movs.filter(m => m.date === date && m.type === tipo);
+    try {
+      if (c === null || (tipo !== 'ajuste' && c < 0)) { App.dizer('Valor inválido. Exemplo: 1 234,56', false); return desenharTabela(); }
+      if (existentes.length > 1) return desenharTabela();
+      if (c === 0) {
+        if (existentes.length === 1) return apagarMov(existentes[0]);
+        return desenharTabela();
+      }
+      if (existentes.length === 1) await DB.put('movements', { ...existentes[0], cents: c });
+      else await DB.put('movements', { date, type: tipo, cents: c, categoryId: null, desc: '' });
+      await depoisDeGuardar('Guardado.');
+    } catch (err) { App.dizer('Não foi possível guardar: ' + err.message, false); }
+  }
+  function focarHoje() { const th = $('tab').querySelector('th.hoje'); if (th) th.scrollIntoView({ inline: 'center', block: 'nearest' }); }
+  async function mudarIntervalo(lado) {
+    const t = $('addN').value.trim(), n = Number(t);
+    $('eAdd').textContent = '';
+    if (!/^\d+$/.test(t) || n < 1 || n > 366) { $('eAdd').textContent = 'Erro: escreve um número inteiro entre 1 e 366.'; return; }
+    const { de, ate } = intervalo();
+    if (lado === 'fim') E.settings.tableTo = Calc.addDays(ate, n); else E.settings.tableFrom = Calc.addDays(de, -n);
+    await App.guardar(); App.atualizar();
+    App.dizer(n + (n === 1 ? ' dia adicionado.' : ' dias adicionados.'));
+  }
+
+  // ---------- Página do dia ----------
+  function desenharDia() {
+    if (!diaAtual) return;
+    const d = diaAtual, movs = E.movs.filter(m => m.date === d).sort((a, b) => a.id - b.id);
+    const desc = (E.days.find(x => x.date === d) || {}).text || '';
+    $('vDia').innerHTML = '<button type="button" id="dVoltar">Voltar à tabela</button><h2>' + Calc.diaSemana(d) + ', ' + Util.isoToPt(d) + '</h2>' +
+      '<label for="dDesc">Descrição do dia</label><textarea id="dDesc">' + esc(desc) + '</textarea>' +
+      '<button type="button" id="dGuardar" class="primario">Guardar descrição</button><h3>Movimentos</h3>' +
+      (movs.length ? '<ul class="movs">' + movs.map(m => '<li><span><strong>' + NOME[m.type] + '</strong> ' + Util.fmtEUR(m.cents) + '<br>' + esc(catNome(m.categoryId)) +
+        (m.desc ? ' - ' + esc(m.desc) : '') + '</span><span><button type="button" data-ed="' + m.id + '">Editar</button><button type="button" class="perigo" data-ap="' + m.id + '">Apagar</button></span></li>').join('') + '</ul>'
+        : '<p>Sem movimentos neste dia.</p>') + '<button type="button" id="dAdd" class="primario">+ Adicionar movimento</button>';
+  }
+  function abrirDia(d) { diaAtual = d; desenharDia(); App.ir('Dia'); }
+  async function guardarDesc() {
+    try {
+      const t = $('dDesc').value.trim();
+      if (t) await DB.put('days', { date: diaAtual, text: t }); else await DB.del('days', diaAtual);
+      E.days = await DB.all('days'); App.dizer('Descrição do dia guardada.');
+    } catch (err) { App.dizer('Não foi possível guardar: ' + err.message, false); }
+  }
+  async function apagarMov(m) {
+    const ok = await App.confirmar('Apagar este movimento?', NOME[m.type] + ' de ' + Util.fmtEUR(m.cents) + ' em ' + Util.isoToPt(m.date) + '.', 'Apagar');
+    if (!ok) return desenharTabela();
+    try {
+      await DB.del('movements', m.id); await recarregar();
+      App.dizer('Movimento apagado.', true, { rotulo: 'Desfazer', fn: async () => { await DB.put('movements', m); await depoisDeGuardar('Movimento reposto.'); } });
+    } catch (err) { App.dizer('Não foi possível apagar: ' + err.message, false); }
+  }
+
+  // ---------- Registo de movimentos ----------
+  function dica() { $('rDica').hidden = $('rTipo').value !== 'ajuste'; }
+  function abrirReg({ date, mov }) {
+    editId = mov ? mov.id : null;
+    $('rTitulo').textContent = mov ? 'Editar movimento' : 'Registar movimento';
+    $('rTipo').value = mov ? mov.type : 'gasto';
+    $('rValor').value = mov ? Util.toInput(mov.cents) : '';
+    $('rData').value = mov ? mov.date : date;
+    $('rDesc').value = mov ? (mov.desc || '') : '';
+    const lista = E.cats.filter(c => !c.archived || (mov && mov.categoryId === c.id)).sort((a, b) => a.name.localeCompare(b.name, 'pt'));
+    $('rCat').innerHTML = '<option value="">Sem categoria</option>' + lista.map(c => '<option value="' + c.id + '">' + esc(c.name) + (c.archived ? ' (arquivada)' : '') + '</option>').join('');
+    $('rCat').value = mov && mov.categoryId != null ? String(mov.categoryId) : '';
+    $('eValor').textContent = ''; $('eData').textContent = '';
+    dica(); $('dReg').showModal(); $('rValor').focus();
+  }
+  async function submeterReg(e) {
+    e.preventDefault();
+    $('eValor').textContent = ''; $('eData').textContent = '';
+    const tipo = $('rTipo').value, c = Util.parseMoney($('rValor').value), data = $('rData').value;
+    let ok = true;
+    if (c === null || c === 0 || (tipo !== 'ajuste' && c < 0)) { $('eValor').textContent = 'Erro: escreve um valor válido, maior que zero. Exemplo: 12,50'; ok = false; }
+    if (!Util.validISO(data)) { $('eData').textContent = 'Erro: escolhe uma data válida.'; ok = false; }
+    if (!ok) return;
+    const obj = { date: data, type: tipo, cents: c, categoryId: $('rCat').value ? Number($('rCat').value) : null, desc: $('rDesc').value.trim() };
+    if (editId != null) obj.id = editId;
+    try { await DB.put('movements', obj); $('dReg').close(); await depoisDeGuardar('Movimento guardado.'); }
+    catch (err) { App.dizer('Não foi possível guardar: ' + err.message, false); }
+  }
+
+  function iniciar() {
+    App.aoAtualizar(() => { desenharResumo(); desenharTabela(); desenharDia(); });
+    $('tab').addEventListener('change', e => { if (e.target.matches('input[data-tipo]')) celula(e.target); });
+    $('tab').addEventListener('click', e => { const b = e.target.closest('[data-dia]'); if (b) abrirDia(b.dataset.dia); });
+    $('vDia').addEventListener('click', e => {
+      const t = e.target;
+      if (t.id === 'dVoltar') App.ir('Tabela');
+      else if (t.id === 'dGuardar') guardarDesc();
+      else if (t.id === 'dAdd') abrirReg({ date: diaAtual });
+      else if (t.dataset.ed) abrirReg({ mov: E.movs.find(m => m.id === Number(t.dataset.ed)) });
+      else if (t.dataset.ap) apagarMov(E.movs.find(m => m.id === Number(t.dataset.ap)));
+    });
+    $('vDia').addEventListener('change', e => { if (e.target.id === 'dDesc') guardarDesc(); });
+    $('fab').addEventListener('click', () => abrirReg({ date: !$('vDia').hidden && diaAtual ? diaAtual : Util.todayISO() }));
+    $('fReg').addEventListener('submit', submeterReg);
+    $('rCancel').addEventListener('click', () => $('dReg').close());
+    $('rTipo').addEventListener('change', dica);
+    $('bHoje').addEventListener('click', focarHoje);
+    $('fIr').addEventListener('submit', e => {
+      e.preventDefault();
+      const d = $('irData').value, th = Util.validISO(d) && $('tab').querySelector('th[data-date="' + d + '"]');
+      if (!th) return App.dizer('Escolhe uma data que esteja na tabela. Usa «Adicionar dias» para criar mais colunas.', false);
+      th.scrollIntoView({ inline: 'center', block: 'nearest' });
+    });
+    $('addFim').addEventListener('click', () => mudarIntervalo('fim'));
+    $('addIni').addEventListener('click', () => mudarIntervalo('inicio'));
+  }
+  return { iniciar, focarHoje };
+})();
+Registo.iniciar();
+App.iniciar();

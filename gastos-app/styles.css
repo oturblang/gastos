@@ -19,3 +19,34 @@ button.perigo{border-color:var(--er);color:var(--er)}
 dialog{max-width:90vw;width:420px;border:2px solid var(--ac);border-radius:8px;padding:18px;color:var(--tx)}
 dialog::backdrop{background:rgba(0,0,0,.45)}
 #dlgText{white-space:pre-line}.linha{display:flex;gap:8px;justify-content:flex-end}
+
+/* Fase 2 */
+body{padding-bottom:84px}
+nav{display:flex;gap:8px;padding:8px 16px;background:#fff;border-bottom:2px solid var(--bd);position:sticky;top:0;z-index:5}
+nav button{flex:1;margin:0;min-height:44px}
+nav button[aria-current="page"]{background:var(--ac);color:#fff}
+main{max-width:1200px}
+#vResumo,#vDia,#vDef{max-width:640px}
+#msg{margin:0;padding:8px 16px}#msg:empty{display:none}
+#msg button{margin:0 0 0 8px;min-height:40px}
+.stats{margin:12px 0}.stats div{padding:12px 0;border-bottom:2px solid var(--bd)}
+.stats dt{color:var(--mut)}.stats dd{margin:0;font-size:1.7rem;font-weight:700}
+#fab{position:fixed;right:16px;bottom:16px;z-index:6;min-height:56px;padding:8px 22px;margin:0;font-size:1.05rem;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.barra{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.barra label{width:100%;margin:0}.barra input{width:auto;min-width:130px;max-width:180px}.barra button{margin:0}
+.tabwrap{overflow:auto;max-height:66vh;border:2px solid var(--bd);border-radius:8px;background:#fff}
+table{border-collapse:separate;border-spacing:0;font-size:.9rem}
+th,td{padding:4px 6px;border-bottom:1px solid var(--bd);border-right:1px solid var(--bd);white-space:nowrap;text-align:right}
+thead th{position:sticky;top:0;background:#e8edf2;z-index:2}
+tbody th{position:sticky;left:0;background:#e8edf2;text-align:left;z-index:1;min-width:130px}
+thead th:first-child{left:0;z-index:3;text-align:left}
+th.hoje,td.hoje{background:#fff3cd!important;box-shadow:inset 0 3px 0 #8a6100}
+td input{width:92px;min-height:40px;padding:4px 6px;text-align:right}
+button.dia{min-height:40px;margin:0;padding:4px 8px;border:0;background:none;font-weight:600;color:var(--ac);text-decoration:underline}
+button.dia small{display:block;font-weight:400}
+.movs{list-style:none;padding:0}.movs li{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--bd)}
+.movs button{margin:0 0 6px 6px}
+textarea,select{width:100%;padding:8px 12px;font:inherit;border:2px solid var(--bd);border-radius:8px;background:#fff;color:var(--tx)}
+textarea{min-height:140px}select{min-height:48px}
+#listaCats{list-style:none;padding:0}#listaCats li{display:flex;gap:8px;align-items:center;margin-bottom:6px}#listaCats button{margin:0}
+dialog form{max-height:80vh;overflow:auto}
