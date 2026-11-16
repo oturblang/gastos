@@ -120,3 +120,4 @@ table.hist td{text-align:left}table.hist td.num{text-align:right;white-space:now
 .pers .nm{font-weight:700;color:var(--ac)}.pers .sub{font-weight:400;color:var(--mut)}
 .nota-per{white-space:pre-line}
 #vPeriodo .tabwrap{width:fit-content;max-width:100%}
+td input.multi{border-style:dashed;border-color:var(--ac)}

@@ -50,7 +50,7 @@ const Registo = (() => {
       for (const c of cols) {
         const cl = cls(c.date, hoje);
         if (!editavel) h += '<td' + cl + ' data-date="' + c.date + '" data-calc="' + (k === 'sobra' ? 'sobra' : k === 'poup' ? 'poup' : 'capital') + '">' + Util.fmtEUR(c[k]) + '</td>';
-        else if (c.n[k] > 1) h += '<td' + cl + '><button type="button" class="dia" data-dia="' + c.date + '" aria-label="' + nome + ' ' + Util.isoToPt(c.date) + ': ' + c.n[k] + ' movimentos, abrir o dia">' + Util.fmtEUR(c.v[k]) + '</button></td>';
+        else if (c.n[k] > 1) h += '<td' + cl + '><input class="multi" data-date="' + c.date + '" data-tipo="' + k + '" inputmode="decimal" autocomplete="off" title="Soma de ' + c.n[k] + ' movimentos. Se alterares o valor, a diferença é aplicada ao último movimento. Toca no dia para ver todos." aria-label="' + nome + ' ' + Util.isoToPt(c.date) + ': soma de ' + c.n[k] + ' movimentos" value="' + Util.toInput(c.v[k]) + '"></td>';
         else h += '<td' + cl + '><input data-date="' + c.date + '" data-tipo="' + k + '" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="' + nome + ' ' + Util.isoToPt(c.date) + '" value="' + (c.n[k] ? Util.toInput(c.v[k]) : '') + '"></td>';
       }
       h += '</tr>';
@@ -75,7 +75,14 @@ const Registo = (() => {
     const existentes = E.movs.filter(m => m.date === date && m.type === tipo);
     try {
       if (c === null || (tipo !== 'ajuste' && c < 0)) { App.dizer('Valor inválido. Exemplo: 1 234,56', false); return forcar(); }
-      if (existentes.length > 1) return forcar();
+      if (existentes.length > 1) {   // várias parcelas no mesmo dia (ex.: recorrente + manual): o valor escrito é o novo total
+        const soma = existentes.reduce((s, m) => s + m.cents, 0), ord = [...existentes].sort((x, y) => x.id - y.id);
+        const alvo = [...ord].reverse().find(m => m.recId == null) || ord[ord.length - 1], novo = alvo.cents + (c - soma);
+        if (c === soma) return forcar();
+        if (novo === 0 || (tipo !== 'ajuste' && novo < 0)) { App.dizer('Para chegar a esse valor, abre o dia (toca na data) e edita os movimentos um a um.', false); return forcar(); }
+        await DB.put('movements', { ...alvo, cents: novo });
+        return depoisDeGuardar('Guardado: total de ' + NOME[tipo] + ' ' + Util.fmtEUR(c) + ' em ' + Util.isoToPt(date) + '.');
+      }
       if (c === 0) { if (existentes.length === 1) return apagarMov(existentes[0]); return forcar(); }
       if (existentes.length === 1) await DB.put('movements', { ...existentes[0], cents: c });
       else await DB.put('movements', { date, type: tipo, cents: c, categoryId: null, desc: '' });
@@ -251,5 +258,5 @@ const Registo = (() => {
   }
   return { abrirDia, iniciar, focarHoje, rapido, editarMov: m => abrirReg({ mov: m }), apagarMov };
 })();
-Metas.iniciar(); Poup.iniciar(); Invest.iniciar(); Per.iniciar(); Registo.iniciar();
+Metas.iniciar(); Poup.iniciar(); Invest.iniciar(); Per.iniciar(); Analise.iniciar(); Registo.iniciar();
 App.iniciar();

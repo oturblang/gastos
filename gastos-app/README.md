@@ -1,4 +1,4 @@
-# Gastos — Fase 4 (Períodos)
+# Gastos — Fase 5 (Gráficos e análise)
 
 ## Publicar no GitHub Pages
 1. Cria um repositório no GitHub (ex.: `gastos`).
@@ -30,3 +30,7 @@ A app só funciona por `https` ou `localhost` (não abrindo o ficheiro diretamen
 - **Períodos**: lista, criar, editar e apagar. Os períodos não se podem sobrepor (a app avisa e diz qual é o outro).
 - **Página do período**: totais, média de gastos por dia, tabela, gráficos e categorias só desse intervalo. É uma vista dos dias normais: apagar o período não apaga movimentos, e os dias contam sempre nos totais globais.
 - Na página do dia aparece o período a que o dia pertence.
+
+## Novidades da Fase 5
+- **Gráficos** (novo separador): dias, semanas, meses e anos; comparação do intervalo em curso com o anterior (▲/▼ e percentagem); ganhos, gastos e investido; poupança no fim de cada intervalo; frequência de investimento (nº de investimentos, dias e semanas com investimento); gastos por categoria. Cada gráfico tem «Ver valores em tabela».
+- Tabela: uma célula com várias parcelas no mesmo dia (por exemplo recorrente + manual) mostra a soma e pode ser editada; a diferença vai para o último movimento.

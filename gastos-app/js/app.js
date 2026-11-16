@@ -2,7 +2,7 @@
 /* Estado partilhado, navegação, mensagens, categorias, valores iniciais, backup e armazenamento. */
 const App = (() => {
   const $ = id => document.getElementById(id);
-  const VISTAS = ['Inicio', 'Tabela', 'Poupanca', 'Invest', 'Periodos', 'Periodo', 'Dia'];
+  const VISTAS = ['Inicio', 'Tabela', 'Graficos', 'Poupanca', 'Invest', 'Periodos', 'Periodo', 'Dia'];
   const CATS_BASE = ['Comida', 'Transportes', 'Experiências', 'Saúde', 'Casa', 'Outros'];
   const padrao = () => ({ initialSavings: 0, initialInvested: 0, startDate: Util.todayISO(), backupReminderDays: 14,
     lastBackup: null, catsSeeded: false, configured: false, tableFrom: null, tableTo: null });

@@ -54,6 +54,38 @@ const Graficos = (() => {
     const rolar = el.querySelector('.barras-scroll'); rolar.scrollLeft = rolar.scrollWidth;   // mostra os períodos mais recentes
   }
 
+  /** Barras agrupadas genéricas (valores positivos ou negativos). series: [{k, cor, nome}]; unidade: 'eur' ou 'n' (contagens). */
+  function barrasGen(el, itens, rotulos, titulos, resumo, series, unidade) {
+    const eur = unidade !== 'n', f = v => eur ? Util.fmtEUR(v) : String(v), m = eur ? 1 : 100;
+    const EIXO = 58, ML = 8, MR = 8, MT = 10, MB = 28, H = 230, S = series.length;
+    const larg = Math.max(el.clientWidth || 320, 300) - EIXO;
+    const n = itens.length, gw = Math.max(40 + 14 * S, (larg - ML - MR) / n), W = Math.ceil(ML + MR + gw * n);
+    const vals = itens.flatMap(i => series.map(s => i[s.k] * m));
+    const sc = escala(Math.min(0, ...vals), Math.max(0, ...vals)), y = v => MT + (H - MT - MB) * (1 - (v - sc.min) / (sc.max - sc.min));
+    const bw = Math.max(6, Math.min(20, Math.floor((gw - 14) / S) - 2));
+    let eixo = '<svg class="eixo" width="' + EIXO + '" height="' + H + '" viewBox="0 0 ' + EIXO + ' ' + H + '" aria-hidden="true">';
+    let s = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + attr(resumo) + '">';
+    sc.ticks.forEach(t => {
+      s += '<line class="gl" x1="0" x2="' + (W - MR) + '" y1="' + pt(y(t)) + '" y2="' + pt(y(t)) + '"/>';
+      eixo += '<text class="tx" x="' + (EIXO - 8) + '" y="' + pt(y(t) + 4) + '" text-anchor="end">' + esc(eur ? Util.fmtEixo(t) : String(Math.round(t / 100))) + '</text>';
+    });
+    s += '<line class="bl" x1="0" x2="' + (W - MR) + '" y1="' + pt(y(0)) + '" y2="' + pt(y(0)) + '"/>';
+    itens.forEach((it, i) => {
+      const cx = ML + gw * (i + 0.5), x0 = cx - (S * bw + (S - 1) * 2) / 2;
+      series.forEach((se, k) => {
+        const v = it[se.k] * m, x = x0 + k * (bw + 2);
+        if (v > 0) s += '<path d="' + barraPath(x, y(v), bw, y(0) - y(v)) + '" fill="' + se.cor + '"/>';
+        else if (v < 0) { const y0 = y(0), ye = y(v), r = Math.min(4, ye - y0, bw / 2);   // negativo: arredondado em baixo
+          s += '<path d="M' + pt(x) + ',' + pt(y0) + 'V' + pt(ye - r) + 'Q' + pt(x) + ',' + pt(ye) + ' ' + pt(x + r) + ',' + pt(ye) + 'H' + pt(x + bw - r) + 'Q' + pt(x + bw) + ',' + pt(ye) + ' ' + pt(x + bw) + ',' + pt(ye - r) + 'V' + pt(y0) + 'Z" fill="' + se.cor + '"/>'; }
+      });
+      s += '<text class="tx" x="' + pt(cx) + '" y="' + (H - 8) + '" text-anchor="middle">' + esc(rotulos[i]) + '</text>';
+      const tip = titulos[i] + '\n' + series.map(se => se.nome + ': ' + f(it[se.k])).join('\n');
+      s += '<rect class="hit" x="' + pt(ML + gw * i) + '" y="' + MT + '" width="' + pt(gw) + '" height="' + (H - MT - MB) + '" fill="transparent" pointer-events="all" data-tip="' + attr(tip) + '"/>';
+    });
+    el.innerHTML = '<div class="barras-wrap">' + eixo + '</svg><div class="barras-scroll">' + s + '</svg></div></div>';
+    const rolar = el.querySelector('.barras-scroll'); rolar.scrollLeft = rolar.scrollWidth;
+  }
+
   /** Duas linhas: poupança e capital investido ao longo do tempo. */
   function linha(el, pts, rotulos, titulos, resumo) {
     const larg = Math.max(el.clientWidth || 320, 300), ML = 56, MR = 92, MT = 14, MB = 28, H = 220, n = pts.length;
@@ -137,5 +169,5 @@ const Graficos = (() => {
     document.addEventListener('pointerdown', e => { const a = alvo(e); if (a) mostrar(a, e); else tip.hidden = true; });
     document.addEventListener('scroll', () => { tip.hidden = true; }, true);
   }
-  return { COR, FATIAS, OUTRAS, barras, linha, circulo, iniciarTip };
+  return { COR, FATIAS, OUTRAS, barras, barrasGen, linha, circulo, iniciarTip };
 })();
