@@ -122,6 +122,20 @@ const Calc = (() => {
     const de = maxIso(r.startDate, hoje), w = new Date(de + 'T00:00:00Z').getUTCDay(), d = addDays(de, (r.weekday - w + 7) % 7);
     return r.endDate && d > r.endDate ? null : d;
   }
+  /** Investimentos que faltam criar (sem duplicar) e regras com `lastGen` atualizado. Pura: quem chama é que grava. */
+  function gerarRecorrentes(recs, movs, hoje) {
+    const tem = new Set(movs.filter(m => m.recId != null).map(m => m.recId + '|' + m.date)), novos = [], atualizadas = [];
+    for (const r of recs) {
+      if (!r.active) continue;   // pausada: não avança
+      for (const dt of ocorrencias(r, hoje)) {
+        const k = r.id + '|' + dt; if (tem.has(k)) continue;
+        tem.add(k); novos.push({ date: dt, type: 'investimento', cents: r.cents, categoryId: null, desc: r.note || 'Investimento recorrente', recId: r.id });
+      }
+      const ate = r.endDate && r.endDate < hoje ? r.endDate : hoje;
+      if (r.lastGen !== ate) atualizadas.push({ ...r, lastGen: ate });
+    }
+    return { novos, recs: atualizadas };
+  }
   /** Movimentos por ordem cronológica, cada um com o saldo da poupança logo depois dele. */
   function historico(s, movs) {
     const ord = [...movs].sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.id - b.id);
@@ -156,7 +170,7 @@ const Calc = (() => {
     return { dias, ganho, gasto, investimento, ajuste: somaTipo(movs, 'ajuste', p.start, p.end), sobra: ganho - gasto - investimento,
       mediaGasto: Math.round(gasto / dias), poupFim: total(s, movs, p.end).poup };
   }
-  return { frequencia, diasDe, sobrepoe, conflito, periodoDe, resumoPeriodo, textoSemana, ocorrencias, proxima, historico, progresso, TIPOS, addDays, diasEntre, diaSemana, efeito, serie, total, gastosMes, CONTAGEM, chave, inicioDe, fimDe, anterior, janela,
+  return { gerarRecorrentes, frequencia, diasDe, sobrepoe, conflito, periodoDe, resumoPeriodo, textoSemana, ocorrencias, proxima, historico, progresso, TIPOS, addDays, diasEntre, diaSemana, efeito, serie, total, gastosMes, CONTAGEM, chave, inicioDe, fimDe, anterior, janela,
     rotulo, titulo, agrupar, evolucao, somaTipo, gastosPorCategoria, diasComInvestimento };
 })();
 if (typeof module !== 'undefined') module.exports = Calc;

@@ -258,5 +258,5 @@ const Registo = (() => {
   }
   return { abrirDia, iniciar, focarHoje, rapido, editarMov: m => abrirReg({ mov: m }), apagarMov };
 })();
-Metas.iniciar(); Poup.iniciar(); Invest.iniciar(); Per.iniciar(); Analise.iniciar(); Registo.iniciar();
+Metas.iniciar(); Poup.iniciar(); Invest.iniciar(); Per.iniciar(); Analise.iniciar(); Calculos.iniciar(); Registo.iniciar();
 App.iniciar();

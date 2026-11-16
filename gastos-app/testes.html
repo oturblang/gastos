@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testes dos cálculos</title>
+<meta name="theme-color" content="#0f5c6e">
+<style>
+body{margin:0;background:#f4f6f8;color:#1c2330;font:17px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:16px}
+main{max-width:860px;margin:0 auto}
+h1{font-size:1.4rem}h2{font-size:1.1rem;margin:22px 0 6px}
+#resumo{padding:12px 16px;border:2px solid #b9c2cd;border-radius:8px;background:#fff;font-weight:700}
+#resumo.certo{border-color:#14532d;color:#14532d}#resumo.errado{border-color:#9b1c1c;color:#9b1c1c}
+ul{list-style:none;padding:0;margin:0}li{padding:6px 0;border-bottom:1px solid #d6dbe1}
+.ok{font-weight:700;color:#14532d}.falha{font-weight:700;color:#9b1c1c}.det{display:block;color:#9b1c1c;font-size:.9rem}
+a{color:#0f5c6e;font-weight:600}
+</style>
+</head>
+<body>
+<main>
+  <p><a href="./">← Voltar à app</a></p>
+  <h1>Testes dos cálculos</h1>
+  <p>Estes testes usam só as contas da app, com dados inventados. <strong>Não leem nem alteram os teus dados.</strong> Cada linha diz o que foi verificado.</p>
+  <p id="resumo" role="status">A executar…</p>
+  <div id="lista"></div>
+</main>
+<script src="js/util.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/csv.js"></script>
+<script src="js/db.js"></script>
+<script src="js/testes.js"></script>
+<script>
+(function () {
+  var res;
+  try { res = Testes.correr(); } catch (e) { document.getElementById('resumo').textContent = 'Erro ao executar os testes: ' + e.message; document.getElementById('resumo').className = 'errado'; return; }
+  var falhas = res.filter(function (r) { return !r.ok; }).length, grupos = {}, ordem = [];
+  res.forEach(function (r) { if (!grupos[r.grupo]) { grupos[r.grupo] = []; ordem.push(r.grupo); } grupos[r.grupo].push(r); });
+  var r = document.getElementById('resumo');
+  r.textContent = falhas ? falhas + ' de ' + res.length + ' testes falharam.' : 'Todos os ' + res.length + ' testes passaram.';
+  r.className = falhas ? 'errado' : 'certo';
+  var h = '';
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  ordem.forEach(function (g) {
+    var ok = grupos[g].filter(function (x) { return x.ok; }).length;
+    h += '<h2>' + esc(g) + ' (' + ok + '/' + grupos[g].length + ')</h2><ul>';
+    grupos[g].forEach(function (x) { h += '<li><span class="' + (x.ok ? 'ok' : 'falha') + '">' + (x.ok ? '✓ Passou' : '✗ Falhou') + '</span> ' + esc(x.nome) + (x.ok ? '' : '<span class="det">' + esc(x.detalhe) + '</span>') + '</li>'; });
+    h += '</ul>';
+  });
+  document.getElementById('lista').innerHTML = h;
+})();
+</script>
+</body>
+</html>

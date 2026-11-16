@@ -2,7 +2,7 @@
 /* Estado partilhado, navegação, mensagens, categorias, valores iniciais, backup e armazenamento. */
 const App = (() => {
   const $ = id => document.getElementById(id);
-  const VISTAS = ['Inicio', 'Tabela', 'Graficos', 'Poupanca', 'Invest', 'Periodos', 'Periodo', 'Dia'];
+  const VISTAS = ['Inicio', 'Tabela', 'Graficos', 'Poupanca', 'Invest', 'Calculos', 'Periodos', 'Periodo', 'Dia'];
   const CATS_BASE = ['Comida', 'Transportes', 'Experiências', 'Saúde', 'Casa', 'Outros'];
   const padrao = () => ({ initialSavings: 0, initialInvested: 0, startDate: Util.todayISO(), backupReminderDays: 14,
     lastBackup: null, catsSeeded: false, configured: false, tableFrom: null, tableTo: null });
@@ -176,6 +176,19 @@ const App = (() => {
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
       atualizar(); dizer('Backup exportado. Guarda o ficheiro num local seguro.');
     } catch (err) { dizer('Não foi possível exportar: ' + err.message, false); }
+  });
+  function descarregar(nome, conteudo) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([conteudo], { type: 'text/csv;charset=utf-8' })); a.download = nome;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  $('bCsvMov').addEventListener('click', () => {
+    if (!E.movs.length) return dizer('Ainda não há movimentos para exportar.', false);
+    descarregar('movimentos-' + Util.todayISO() + '.csv', Csv.movimentos(E.movs, E.cats, E.pers)); dizer('Ficheiro de movimentos exportado (CSV).');
+  });
+  $('bCsvHist').addEventListener('click', () => {
+    if (!E.settings.configured) return dizer('Define primeiro os valores iniciais.', false);
+    descarregar('historico-poupanca-' + Util.todayISO() + '.csv', Csv.historico(E.settings, E.movs, E.cats)); dizer('Histórico da poupança exportado (CSV).');
   });
   $('bImp').addEventListener('click', () => $('fImp').click());
   $('fImp').addEventListener('change', async e => {

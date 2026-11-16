@@ -121,3 +121,7 @@ table.hist td{text-align:left}table.hist td.num{text-align:right;white-space:now
 .nota-per{white-space:pre-line}
 #vPeriodo .tabwrap{width:fit-content;max-width:100%}
 td input.multi{border-style:dashed;border-color:var(--ac)}
+.formula{padding:10px 14px;background:#fff;border:2px solid var(--bd);border-left:6px solid var(--ac);border-radius:8px;font-weight:600;overflow-wrap:anywhere}
+.exemplo{padding:10px 14px;background:#eef6f8;border-radius:8px;overflow-wrap:anywhere}
+.verif{font-weight:700}.verif.certo{color:#006300}.verif.errado{color:var(--er)}
+#vCalculos{max-width:760px;margin:0 auto}

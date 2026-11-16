@@ -11,6 +11,7 @@ const Util = (() => {
     const idx = Math.max(s.lastIndexOf(','), s.lastIndexOf('.'));
     let inteiro = s, dec = '';
     if (idx >= 0) { inteiro = s.slice(0, idx); dec = s.slice(idx + 1); }
+    if (/[.,]/.test(inteiro) && !/^\d{1,3}([.,]\d{3})+$/.test(inteiro)) return null;   // separadores só como milhares (1.234.567)
     inteiro = inteiro.replace(/[.,]/g, '');
     if (!/^\d*$/.test(inteiro) || !/^\d{0,2}$/.test(dec) || inteiro.length > 12) return null;
     if (inteiro === '' && dec === '') return null;

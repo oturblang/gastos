@@ -29,7 +29,7 @@ const Demo = (() => {
     $('periodoTxt').textContent = TEXTO[modo];
     document.querySelectorAll('#periodos button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === modo)));
     $('kpis').innerHTML =
-      tile('Poupança atual', Util.fmtEUR(tot.poup)) + tile('Capital investido', Util.fmtEUR(tot.capital)) +
+      tile('Poupança atual', Util.fmtEUR(tot.poup)) + tile('Capital investido', Util.fmtEUR(tot.capital)) + tile('Gastos deste mês', Util.fmtEUR(Calc.gastosMes(movs, hoje))) +
       tile('Ganhos', Util.fmtEUR(soma('ganho')), delta(soma('ganho'), antes('ganho'), true)) +
       tile('Gastos', Util.fmtEUR(soma('gasto')), delta(soma('gasto'), antes('gasto'), false)) +
       tile('Investido no período', Util.fmtEUR(soma('investimento')), delta(soma('investimento'), antes('investimento'), true)) +

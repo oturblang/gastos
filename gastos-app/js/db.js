@@ -119,17 +119,10 @@ const DB = (() => {
       rq.onsuccess = () => {
         const mq = t.objectStore('movements').getAll();
         mq.onsuccess = () => {
-          const tem = new Set(mq.result.filter(m => m.recId != null).map(m => m.recId + '|' + m.date));
-          for (const r of rq.result) {
-            if (!r.active) continue;   // pausada: não avança
-            for (const dt of Calc.ocorrencias(r, hoje)) {
-              if (tem.has(r.id + '|' + dt)) continue;
-              t.objectStore('movements').put({ date: dt, type: 'investimento', cents: r.cents, categoryId: null, desc: r.note || 'Investimento recorrente', recId: r.id });
-              tem.add(r.id + '|' + dt); criados++;
-            }
-            const ate = r.endDate && r.endDate < hoje ? r.endDate : hoje;
-            if (r.lastGen !== ate) t.objectStore('recurrences').put({ ...r, lastGen: ate });
-          }
+          const r = Calc.gerarRecorrentes(rq.result, mq.result, hoje);
+          r.novos.forEach(m => t.objectStore('movements').put(m));
+          r.recs.forEach(x => t.objectStore('recurrences').put(x));
+          criados = r.novos.length;
         };
       };
       t.oncomplete = () => ok(criados);

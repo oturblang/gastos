@@ -1,36 +1,45 @@
-# Gastos — Fase 5 (Gráficos e análise)
+# Gastos — poupança e investimentos (estilo Excel)
 
-## Publicar no GitHub Pages
-1. Cria um repositório no GitHub (ex.: `gastos`).
-2. Carrega **todos** os ficheiros mantendo as pastas (`js/`, `icons/`): `index.html`, `styles.css`, `sw.js`, `manifest.webmanifest`.
-3. Em *Settings → Pages*, escolhe *Deploy from a branch*, branch `main`, pasta `/ (root)`.
-4. Após 1–2 minutos, abre `https://utilizador.github.io/gastos/`.
+App pessoal para registar gastos, ganhos e investimentos dia a dia, ver a poupança e o capital investido, e perceber se estás a gastar ou a poupar mais.
+Funciona **offline**, é **gratuita**, sem contas, sem servidor e sem internet depois da primeira abertura. Os dados ficam só no teu dispositivo.
 
-## Instalar
-- **Telemóvel (Android/Chrome):** menu ⋮ → *Instalar aplicação*. **iPhone/Safari:** Partilhar → *Adicionar ao ecrã principal*.
-- **Computador (Chrome/Edge):** ícone de instalar na barra de endereço.
+## O que tem
+- **Início**: valores iniciais, categorias, backup (JSON), exportar CSV, apagar tudo e uma demonstração com gráficos e metas.
+- **Tabela**: dias em colunas, como no Excel. Escreves nas células e tudo recalcula. Adiciona ou remove dias, vai a uma data (fica destacada), abre a página de cada dia.
+- **Gráficos**: dias, semanas, meses e anos, comparação com o intervalo anterior, frequência de investimento e gastos por categoria.
+- **Poupança**: saldo, histórico, adicionar dinheiro, ajuste manual e meta.
+- **Investimentos**: capital investido, histórico, regras semanais (criar, editar, pausar, apagar) e meta.
+- **Períodos**: viagens ou outros intervalos, cada um com a sua página (totais, tabela, gráficos e categorias).
+- **Cálculos**: todas as fórmulas em linguagem simples, com exemplos feitos com os teus números.
+- **Testes** (`testes.html`): 100 verificações automáticas dos cálculos, com dados inventados. Não mexem nos teus dados.
 
-## Como funciona
-1. **Início:** preenche os valores iniciais e guarda. A tabela é criada logo a seguir.
-2. **Tabela:** escreve ganhos, gastos, investido e ajustes. Podes adicionar dias antes e depois.
-3. **Início, Demonstração:** gráficos e números calculados a partir da tabela.
+## Como publicar no GitHub Pages (uma vez)
+1. Entra em github.com e abre o teu repositório (ou cria um novo, público).
+2. Carrega em **Add file → Upload files**.
+3. Arrasta para lá **a pasta `gastos-app`** (a pasta inteira, não os ficheiros soltos). Os caminhos têm de começar por `gastos-app/...`.
+4. Desce a página e carrega em **Commit changes**.
+5. Vai a **Settings → Pages**. Em *Source* escolhe **Deploy from a branch**, a branch **main** e a pasta **/ (root)**. Grava.
+6. Espera 1 a 2 minutos (no separador **Actions** vês um visto verde quando termina).
+7. O endereço fica `https://O-TEU-UTILIZADOR.github.io/NOME-DO-REPOSITORIO/gastos-app/`.
 
-## Atualizações
-Quando alterares ficheiros, aumenta `CACHE` em `sw.js` (`gastos-v2`, …) para os dispositivos receberem a versão nova.
-A app só funciona por `https` ou `localhost` (não abrindo o ficheiro diretamente).
+> Para **atualizar** mais tarde: repete os passos 2 a 4 com a pasta nova (os ficheiros com o mesmo nome são substituídos). Depois fecha **todas** as janelas da app (incluindo a instalada) e abre de novo.
 
-## Novidades da Fase 3
-- **Poupança**: saldo, histórico de todos os movimentos com o saldo depois de cada um, «Adicionar dinheiro», ajuste manual e meta de poupança.
-- **Investimentos**: capital investido, histórico, regras semanais (criar, editar, pausar, apagar) e meta de investimento. Ao abrir a app, os investimentos em falta são criados sem duplicar.
-- **Apagar**: colunas (primeira ou última), conteúdo de um dia e categorias, sempre com confirmação e «Desfazer».
-- **Tabela**: o dia escolhido em «Ir» fica destacado a azul, com a etiqueta «escolhido».
-- Backup passa à versão 3 (os backups antigos continuam a ser aceites).
+## Como instalar
+- **Telemóvel Android (Chrome)**: abre o endereço, menu ⋮ → **Instalar app** (ou «Adicionar ao ecrã principal»).
+- **iPhone (Safari)**: abre o endereço, botão Partilhar → **Adicionar ao ecrã principal**.
+- **Computador (Chrome ou Edge)**: abre o endereço e carrega no ícone de instalar na barra de endereço.
 
-## Novidades da Fase 4
-- **Períodos**: lista, criar, editar e apagar. Os períodos não se podem sobrepor (a app avisa e diz qual é o outro).
-- **Página do período**: totais, média de gastos por dia, tabela, gráficos e categorias só desse intervalo. É uma vista dos dias normais: apagar o período não apaga movimentos, e os dias contam sempre nos totais globais.
-- Na página do dia aparece o período a que o dia pertence.
+Depois da primeira abertura, a app funciona sem internet.
 
-## Novidades da Fase 5
-- **Gráficos** (novo separador): dias, semanas, meses e anos; comparação do intervalo em curso com o anterior (▲/▼ e percentagem); ganhos, gastos e investido; poupança no fim de cada intervalo; frequência de investimento (nº de investimentos, dias e semanas com investimento); gastos por categoria. Cada gráfico tem «Ver valores em tabela».
-- Tabela: uma célula com várias parcelas no mesmo dia (por exemplo recorrente + manual) mostra a soma e pode ser editada; a diferença vai para o último movimento.
+## Backup (importante)
+Os dados vivem no navegador do dispositivo. Se limpares os dados do navegador, desinstalares ou perderes o telemóvel, perdem-se.
+- **Início → Backup → Exportar backup (JSON)** guarda tudo num ficheiro. A app lembra-te ao fim de X dias (configurável).
+- **Importar backup** repõe tudo (também serve para levar os dados do telemóvel para o computador). Antes de substituir, mostra um resumo e pede confirmação.
+- **Exportar para Excel (CSV)** gera os movimentos e o histórico da poupança, para abrir no Excel ou Google Sheets. Não serve para repor dados: usa o JSON.
+
+## Para quem for mexer no código
+- HTML, CSS e JavaScript simples, sem build. Caminhos relativos (funciona numa subpasta).
+- `js/util.js` (dinheiro e datas), `js/calc.js` (todas as contas, sem interface), `js/csv.js`, `js/db.js` (IndexedDB e backup), restantes ficheiros = interface.
+- Só se guardam movimentos e valores iniciais; saldos e totais calculam-se sempre.
+- Ao mudar ficheiros, aumenta o número de `CACHE` em `sw.js` (e acrescenta ficheiros novos à lista) para os dispositivos atualizarem.
+- Os testes estão em `js/testes.js` e abrem-se em `testes.html`.
