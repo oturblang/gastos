@@ -43,3 +43,6 @@ Os dados vivem no navegador do dispositivo. Se limpares os dados do navegador, d
 - Só se guardam movimentos e valores iniciais; saldos e totais calculam-se sempre.
 - Ao mudar ficheiros, aumenta o número de `CACHE` em `sw.js` (e acrescenta ficheiros novos à lista) para os dispositivos atualizarem.
 - Os testes estão em `js/testes.js` e abrem-se em `testes.html`.
+
+## Navegação (versão 7)
+Barra no fundo com 5 itens: Início, Tabela, Gráficos, Carteira (Poupança e Investimentos) e Mais (Períodos, Cálculos e Definições). Valores iniciais, categorias, backup, exportações, armazenamento e «apagar tudo» estão em Mais → Definições.

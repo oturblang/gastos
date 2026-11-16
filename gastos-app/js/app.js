@@ -2,7 +2,7 @@
 /* Estado partilhado, navegação, mensagens, categorias, valores iniciais, backup e armazenamento. */
 const App = (() => {
   const $ = id => document.getElementById(id);
-  const VISTAS = ['Inicio', 'Tabela', 'Graficos', 'Poupanca', 'Invest', 'Calculos', 'Periodos', 'Periodo', 'Dia'];
+  const VISTAS = ['Inicio', 'Tabela', 'Graficos', 'Poupanca', 'Invest', 'Calculos', 'Periodos', 'Periodo', 'Dia', 'Mais', 'Definicoes'];
   const CATS_BASE = ['Comida', 'Transportes', 'Experiências', 'Saúde', 'Casa', 'Outros'];
   const padrao = () => ({ initialSavings: 0, initialInvested: 0, startDate: Util.todayISO(), backupReminderDays: 14,
     lastBackup: null, catsSeeded: false, configured: false, tableFrom: null, tableTo: null });
@@ -36,13 +36,22 @@ const App = (() => {
       d.showModal();
     });
   }
+  const NAV = { Dia: 'Tabela', Invest: 'Poupanca', Periodos: 'Mais', Periodo: 'Mais', Calculos: 'Mais', Definicoes: 'Mais' };
+  /** Barra secundária por cima da vista: Poupança/Investimentos (Carteira) ou «‹ Mais». */
+  function subBar(v) {
+    const s = $('subBar');
+    if (v === 'Poupanca' || v === 'Invest') {
+      s.innerHTML = '<div class="seg" role="group" aria-label="Carteira"><button type="button" data-ir="Poupanca" aria-pressed="' + (v === 'Poupanca') + '">Poupança</button><button type="button" data-ir="Invest" aria-pressed="' + (v === 'Invest') + '">Investimentos</button></div>';
+      s.hidden = false;
+    } else if (v === 'Periodos' || v === 'Calculos' || v === 'Definicoes') {
+      s.innerHTML = '<button type="button" class="voltar" data-ir="Mais">‹ Mais</button>'; s.hidden = false;
+    } else { s.textContent = ''; s.hidden = true; }
+  }
   function ir(v) {
     VISTAS.forEach(x => { $('v' + x).hidden = x !== v; });
-    const nav = v === 'Dia' ? 'Tabela' : v === 'Periodo' ? 'Periodos' : v;
-    document.querySelectorAll('nav button').forEach(b => {
-      b.setAttribute('aria-current', b.dataset.v === nav ? 'page' : 'false');
-      if (b.dataset.v === nav && b.parentElement.scrollWidth > b.parentElement.clientWidth) b.parentElement.scrollLeft = b.offsetLeft - 16;
-    });
+    const nav = NAV[v] || v;
+    document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-current', b.dataset.v === nav ? 'page' : 'false'));
+    subBar(v);
     window.scrollTo(0, 0);
     document.dispatchEvent(new CustomEvent('vista', { detail: v }));
   }
@@ -80,17 +89,19 @@ const App = (() => {
     $('fab').hidden = !cfg;
     $('intro').hidden = cfg;
     $('bIniciais').textContent = cfg ? 'Guardar alterações' : 'Guardar e criar a tabela';
+    $((cfg ? 'slotIniciaisDef' : 'slotIniciais')).append($('dIniciais'));   // 1.ª vez: aparece no Início; depois fica nas Definições
     if (ultimaConfig !== cfg) { $('dIniciais').open = !cfg; ultimaConfig = cfg; }
     $('ultimo').textContent = s.lastBackup ? 'Último backup: ' + Util.isoToPt(s.lastBackup.slice(0, 10)) + '.' : 'Ainda não fizeste nenhum backup.';
     let txt = '';
     if (E.movs.length) {
-      if (!s.lastBackup) txt = 'Ainda não fizeste nenhum backup. Exporta um em Início, Backup.';
+      if (!s.lastBackup) txt = 'Ainda não fizeste nenhum backup. Exporta um em Definições.';
       else {
         const dias = Math.floor((Date.now() - Date.parse(s.lastBackup)) / 864e5);
-        if (dias >= s.backupReminderDays) txt = 'Passaram ' + dias + ' dias desde o último backup. Exporta um novo em Início, Backup.';
+        if (dias >= s.backupReminderDays) txt = 'Passaram ' + dias + ' dias desde o último backup. Exporta um novo em Definições.';
       }
     }
-    $('aviso').textContent = txt; $('aviso').hidden = !txt;
+    const av = $('aviso'); av.textContent = txt; av.hidden = !txt;
+    if (txt) { const b = document.createElement('button'); b.type = 'button'; b.dataset.ir = 'Definicoes'; b.textContent = 'Fazer backup'; b.addEventListener('click', () => { $('ajudaBackup').closest('details.caixa').open = true; }); av.append(b); }
     desenharCats();
   }
   function desenharCats() {
@@ -221,6 +232,7 @@ const App = (() => {
   });
   document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => ir(b.dataset.v)));
   $('irInicio').addEventListener('click', () => ir('Inicio'));
+  document.addEventListener('click', e => { const b = e.target.closest('button[data-ir]'); if (b) ir(b.dataset.ir); });
 
   async function armazenamento() {
     let t = 'Armazenamento persistente indisponível neste navegador. Faz backups com regularidade.';
@@ -253,9 +265,9 @@ const App = (() => {
     preencherForm(); atualizar(); armazenamento(); gerarRec();
     document.addEventListener('visibilitychange', () => { if (!document.hidden) gerarRec(); });
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').catch(() => { $('off').textContent = 'Modo offline indisponível aqui.'; });
+      navigator.serviceWorker.register('./sw.js').catch(() => { { $('off').textContent = 'Modo offline indisponível aqui.'; $('off').hidden = false; } });
       navigator.serviceWorker.ready.then(() => { $('off').textContent = 'Pronta para usar offline.'; });
-    } else $('off').textContent = 'Modo offline indisponível neste navegador.';
+    } else { $('off').textContent = 'Modo offline indisponível neste navegador.'; $('off').hidden = false; }
   }
   return { E, gerarRec, dizer, confirmar, ir, guardar, carregar, atualizar, aoAtualizar, iniciar };
 })();

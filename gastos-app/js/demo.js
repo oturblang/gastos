@@ -15,7 +15,7 @@ const Demo = (() => {
     const sobe = p > 0, bom = sobe === boaSubida;
     return '<span class="' + (bom ? 'bom' : 'mau') + '">' + (sobe ? '▲ +' : '▼ ') + p + ' %</span> <span class="neutro">vs período anterior</span>';
   }
-  const tile = (rot, val, extra) => '<div class="tile"><dt>' + rot + '</dt><dd class="v">' + val + '</dd>' + (extra ? '<dd class="sub">' + extra + '</dd>' : '') + '</div>';
+  const tile = (rot, val, extra, cl) => '<div class="tile' + (cl ? ' ' + cl : '') + '"><dt>' + rot + '</dt><dd class="v">' + val + '</dd>' + (extra ? '<dd class="sub">' + extra + '</dd>' : '') + '</div>';
   const legenda = itens => '<ul class="legenda">' + itens.map(([n, c]) => '<li><span class="sw" style="background:' + c + '"></span>' + n + '</li>').join('') + '</ul>';
 
   function desenhar() {
@@ -29,7 +29,7 @@ const Demo = (() => {
     $('periodoTxt').textContent = TEXTO[modo];
     document.querySelectorAll('#periodos button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === modo)));
     $('kpis').innerHTML =
-      tile('Poupança atual', Util.fmtEUR(tot.poup)) + tile('Capital investido', Util.fmtEUR(tot.capital)) + tile('Gastos deste mês', Util.fmtEUR(Calc.gastosMes(movs, hoje))) +
+      tile('Poupança atual', Util.fmtEUR(tot.poup), '', 'hero') + tile('Capital investido', Util.fmtEUR(tot.capital)) + tile('Gastos deste mês', Util.fmtEUR(Calc.gastosMes(movs, hoje))) +
       tile('Ganhos', Util.fmtEUR(soma('ganho')), delta(soma('ganho'), antes('ganho'), true)) +
       tile('Gastos', Util.fmtEUR(soma('gasto')), delta(soma('gasto'), antes('gasto'), false)) +
       tile('Investido no período', Util.fmtEUR(soma('investimento')), delta(soma('investimento'), antes('investimento'), true)) +

@@ -28,7 +28,7 @@ const Registo = (() => {
     return { de, ate, n: Calc.diasEntre(de, ate) + 1 };
   }
   const RUB = [['ganho', 'Ganhos', true], ['gasto', 'Gastos', true], ['investimento', 'Investido', true], ['ajuste', 'Ajustes', true],
-    ['sobra', 'Sobra do dia', false], ['poup', 'Poupança', false], ['capital', 'Capital investido', false]];
+    ['sobra', 'Sobra', false], ['poup', 'Poupança', false], ['capital', 'Capital', false]];
   function desenharTabela() {
     const cfg = E.settings.configured;
     $('tabVazia').hidden = cfg; $('tabConteudo').hidden = !cfg;
