@@ -201,32 +201,100 @@ const Registo = (() => {
   }
 
   // ---------- Registo de movimentos ----------
-  function dica() { $('rDica').hidden = $('rTipo').value !== 'ajuste'; }
+  function dica() { $('rDica').hidden = $('rTipo').value !== 'ajuste'; $('rDividir').hidden = !podeDividir(); atualizarRap(); }
+  let divisao = false;
+  const opcoesCat = sel => {
+    const lista = E.cats.filter(c => !c.archived || String(c.id) === String(sel)).sort((a, b) => a.name.localeCompare(b.name, 'pt'));
+    return '<option value="">Sem categoria</option>' + lista.map(c => '<option value="' + c.id + '">' + esc(c.name) + (c.archived ? ' (arquivada)' : '') + '</option>').join('');
+  };
+  /** Categorias mais usadas (últimos 90 dias) e a do movimento mais recente do mesmo tipo; nada fica guardado, tudo vem dos movimentos. */
+  function sugestoes(tipo) {
+    const desde = Calc.addDays(Util.todayISO(), -90), mesmos = E.movs.filter(m => m.type === tipo && m.categoryId != null && E.cats.some(c => c.id === m.categoryId && !c.archived));
+    const cont = new Map(); mesmos.filter(m => m.date >= desde).forEach(m => cont.set(m.categoryId, (cont.get(m.categoryId) || 0) + 1));
+    const top = [...cont.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, 5).map(x => x[0]);
+    const rec = [...E.movs].filter(m => m.type === tipo).sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id)[0];
+    return { top, recente: rec && rec.categoryId != null && E.cats.some(c => c.id === rec.categoryId && !c.archived) ? rec.categoryId : null };
+  }
+  function atualizarRap() {
+    const t = $('rTipo').value, box = $('rRap');
+    const s = (t === 'gasto' || t === 'ganho') && !divisao && editId == null ? sugestoes(t) : { top: [] };
+    box.hidden = !s.top.length;
+    box.innerHTML = s.top.map(id => '<button type="button" data-cat="' + id + '" aria-pressed="false">' + esc(E.cats.find(c => c.id === id).name) + '</button>').join('');
+    marcarRap();
+  }
+  function marcarRap() { $('rRap').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cat === $('rCat').value))); }
+  function podeDividir() { const t = $('rTipo').value; return t === 'gasto' || t === 'ganho'; }
+  function linhaParte(cat, valor) {
+    const d = document.createElement('div'); d.className = 'parte';
+    d.innerHTML = '<select aria-label="Categoria">' + opcoesCat(cat) + '</select><input inputmode="decimal" autocomplete="off" placeholder="0,00" aria-label="Valor (€)">';
+    d.querySelector('select').value = cat == null ? '' : String(cat); d.querySelector('input').value = valor ? Util.toInput(valor) : '';
+    $('rPartes').append(d);
+  }
+  function lerPartes() {
+    return [...$('rPartes').children].map(d => ({ categoryId: d.querySelector('select').value ? Number(d.querySelector('select').value) : null, cents: Util.parseMoney(d.querySelector('input').value) }));
+  }
+  function falta() {
+    const total = Util.parseMoney($('rValor').value), soma = lerPartes().reduce((a, p) => a + (p.cents > 0 ? p.cents : 0), 0);
+    if (total === null || total <= 0) { $('rFalta').textContent = 'Escreve primeiro o valor total acima.'; return; }
+    const f = total - soma;
+    $('rFalta').textContent = f === 0 ? 'Tudo distribuído: ' + Util.fmtEUR(total) + '.' : f > 0 ? 'Falta distribuir: ' + Util.fmtEUR(f) : 'Passaste o total em ' + Util.fmtEUR(-f);
+  }
+  function modoDivisao(on, partes) {
+    divisao = on && podeDividir();
+    $('rUma').hidden = divisao; $('rDiv').hidden = !divisao; $('eDiv').textContent = '';
+    if (divisao) {
+      $('rPartes').innerHTML = '';
+      const total = Util.parseMoney($('rValor').value), cat = $('rCat').value ? Number($('rCat').value) : null;
+      (partes || [{ categoryId: cat, cents: total > 0 ? total : 0 }, { categoryId: null, cents: 0 }]).forEach(p => linhaParte(p.categoryId, p.cents));
+      falta();
+    }
+    atualizarRap();
+  }
   function abrirReg({ date, mov }) {
-    editId = mov ? mov.id : null;
+    editId = mov ? mov.id : null; divisao = false;
     $('rTitulo').textContent = mov ? 'Editar movimento' : 'Registar movimento';
     $('rTipo').value = mov ? mov.type : 'gasto';
     $('rValor').value = mov ? Util.toInput(mov.cents) : '';
     $('rData').value = mov ? mov.date : date;
     $('rDesc').value = mov ? (mov.desc || '') : '';
-    const lista = E.cats.filter(c => !c.archived || (mov && mov.categoryId === c.id)).sort((a, b) => a.name.localeCompare(b.name, 'pt'));
-    $('rCat').innerHTML = '<option value="">Sem categoria</option>' + lista.map(c => '<option value="' + c.id + '">' + esc(c.name) + (c.archived ? ' (arquivada)' : '') + '</option>').join('');
-    $('rCat').value = mov && mov.categoryId != null ? String(mov.categoryId) : '';
+    $('rCat').innerHTML = opcoesCat(mov && mov.categoryId != null ? mov.categoryId : null);
+    const sug = mov ? null : sugestoes('gasto');
+    $('rCat').value = mov ? (mov.categoryId != null ? String(mov.categoryId) : '') : (sug.recente != null ? String(sug.recente) : '');
     $('eValor').textContent = ''; $('eData').textContent = '';
-    dica(); $('dReg').showModal(); $('rValor').focus();
+    $('rUma').hidden = false; $('rDiv').hidden = true;
+    dica(); $('dReg').showModal(); $('rValor').focus(); $('rValor').select();
   }
   async function submeterReg(e) {
     e.preventDefault();
-    $('eValor').textContent = ''; $('eData').textContent = '';
+    $('eValor').textContent = ''; $('eData').textContent = ''; $('eDiv').textContent = '';
     const tipo = $('rTipo').value, c = Util.parseMoney($('rValor').value), data = $('rData').value;
     let ok = true;
     if (c === null || c === 0 || (tipo !== 'ajuste' && c < 0)) { $('eValor').textContent = 'Erro: escreve um valor válido, maior que zero. Exemplo: 12,50'; ok = false; }
     if (!Util.validISO(data)) { $('eData').textContent = 'Erro: escolhe uma data válida.'; ok = false; }
+    const desc = $('rDesc').value.trim();
+    let partes = null;
+    if (divisao && ok) {
+      partes = lerPartes();
+      if (partes.some(p => p.cents === null || p.cents <= 0)) { $('eDiv').textContent = 'Erro: cada categoria precisa de um valor maior que zero.'; ok = false; }
+      else if (partes.reduce((a, p) => a + p.cents, 0) !== c) { $('eDiv').textContent = 'Erro: a soma das categorias tem de dar exatamente ' + Util.fmtEUR(c) + '.'; ok = false; }
+    }
     if (!ok) return;
-    const obj = { date: data, type: tipo, cents: c, categoryId: $('rCat').value ? Number($('rCat').value) : null, desc: $('rDesc').value.trim() };
-    if (editId != null) Object.assign(obj, { ...(E.movs.find(m => m.id === editId) || {}), ...obj, id: editId });
-    try { await DB.put('movements', obj); $('dReg').close(); await depoisDeGuardar('Movimento guardado: ' + NOME[tipo] + ' ' + Util.fmtEUR(c) + ' em ' + Util.isoToPt(data) + '.'); }
-    catch (err) { App.dizer('Não foi possível guardar: ' + err.message, false); }
+    try {
+      if (partes) {
+        // Cada parte é um movimento normal (por isso totais, gráficos e filtros funcionam); `grp` liga as partes do mesmo gasto.
+        const grp = Date.now(), antigo = editId != null ? E.movs.find(m => m.id === editId) : null;
+        for (let k = 0; k < partes.length; k++) {
+          const o = { date: data, type: tipo, cents: partes[k].cents, categoryId: partes[k].categoryId, desc, grp };
+          if (k === 0 && antigo) Object.assign(o, { ...antigo, ...o, id: editId });
+          await DB.put('movements', o);
+        }
+        $('dReg').close();
+        return await depoisDeGuardar(NOME[tipo] + ' dividido em ' + partes.length + ' categorias: ' + Util.fmtEUR(c) + ' em ' + Util.isoToPt(data) + '.');
+      }
+      const obj = { date: data, type: tipo, cents: c, categoryId: $('rCat').value ? Number($('rCat').value) : null, desc };
+      if (editId != null) Object.assign(obj, { ...(E.movs.find(m => m.id === editId) || {}), ...obj, id: editId });
+      await DB.put('movements', obj); $('dReg').close(); await depoisDeGuardar('Movimento guardado: ' + NOME[tipo] + ' ' + Util.fmtEUR(c) + ' em ' + Util.isoToPt(data) + '.');
+    } catch (err) { App.dizer('Não foi possível guardar: ' + err.message, false); }
   }
 
   function iniciar() {
@@ -259,7 +327,13 @@ const Registo = (() => {
     $('fQuick').addEventListener('submit', submeterQuick);
     $('qCancel').addEventListener('click', () => $('dQuick').close());
     $('rCancel').addEventListener('click', () => $('dReg').close());
-    $('rTipo').addEventListener('change', dica);
+    $('rTipo').addEventListener('change', () => { if (divisao && !podeDividir()) modoDivisao(false); if (editId == null && podeDividir()) { const s = sugestoes($('rTipo').value); $('rCat').value = s.recente != null ? String(s.recente) : ''; } dica(); });
+    $('rDividir').addEventListener('click', () => modoDivisao(true));
+    $('rUnica').addEventListener('click', () => modoDivisao(false));
+    $('rMaisParte').addEventListener('click', () => { linhaParte(null, 0); falta(); });
+    $('rPartes').addEventListener('input', () => { $('eDiv').textContent = ''; falta(); }); $('rValor').addEventListener('input', () => { if (divisao) falta(); });
+    $('rCat').addEventListener('change', marcarRap);
+    $('rRap').addEventListener('click', e => { const b = e.target.closest('button[data-cat]'); if (b) { $('rCat').value = b.dataset.cat; marcarRap(); } });
     $('bHoje').addEventListener('click', () => { destaque = null; forcar(); focarHoje(); });
     $('remIni').addEventListener('click', () => apagarDia(intervalo().de));
     $('remFim').addEventListener('click', () => apagarDia(intervalo().ate));

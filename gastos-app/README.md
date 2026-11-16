@@ -61,3 +61,7 @@ Início só com o resumo (sem gráficos); o gráfico «Poupança e capital inves
 - **Partilhar backup**: botão em Definições → Backup e no aviso do Início. Pergunta se quer palavra-passe, abre a partilha do telemóvel (email, nuvem, WhatsApp) e, se o navegador não partilhar ficheiros, descarrega. A data do último backup só fica registada se a partilha for concluída.
 - **Movimentos** (Mais → Movimentos): pesquisa por texto (descrição e categoria, sem distinguir acentos), filtros por tipo, categoria, período, mês e datas, total do filtrado, 50 de cada vez com «Mostrar mais». Tocar num movimento abre o dia, com «Voltar aos movimentos».
 - Novo ficheiro `js/movimentos.js`; cache do service worker `gastos-v11`. Sem alterações à base de dados nem aos backups.
+
+## Versão 12 (Fase 5 + divisão por categorias)
+- Registo: atalhos das 5 categorias mais usadas (últimos 90 dias), categoria do último movimento do mesmo tipo já escolhida, data de hoje, cursor no valor e Enter guarda. Nada novo é guardado: tudo vem dos movimentos.
+- «Dividir por várias categorias» (gastos e ganhos): reparte o total (ex.: 30 € Comida + 40 € Experiências). Cada parte fica como um movimento normal, ligado às outras por `grp`; totais, gráficos, filtros e backups funcionam sem mudanças. Cache `gastos-v12`.

@@ -351,8 +351,20 @@
     <label for="rData">Data</label>
     <input id="rData" type="date" aria-describedby="eData">
     <p class="erro" id="eData" role="alert"></p>
-    <label for="rCat">Categoria (opcional)</label>
-    <select id="rCat"></select>
+    <div id="rRap" class="chips" role="group" aria-label="Categorias mais usadas" hidden></div>
+    <div id="rUma">
+      <label for="rCat">Categoria (opcional)</label>
+      <select id="rCat"></select>
+      <button type="button" id="rDividir" class="peq">Dividir por várias categorias</button>
+    </div>
+    <div id="rDiv" hidden>
+      <p class="mut">Reparte o valor por categorias. A soma tem de dar o valor total.</p>
+      <div id="rPartes"></div>
+      <button type="button" id="rMaisParte" class="peq">+ Adicionar categoria</button>
+      <p id="rFalta" role="status"></p>
+      <p class="erro" id="eDiv" role="alert"></p>
+      <button type="button" id="rUnica" class="peq">Voltar a uma só categoria</button>
+    </div>
     <label for="rDesc">Descrição (opcional)</label>
     <input id="rDesc" autocomplete="off">
     <div class="linha"><button type="button" id="rCancel">Cancelar</button><button type="submit" class="primario">Guardar</button></div>

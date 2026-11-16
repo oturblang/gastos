@@ -183,3 +183,9 @@ li.hrow{cursor:default}
 .coluna button{display:block;width:100%;margin:10px 0 0}
 #dDesc{min-height:64px;resize:none;overflow:hidden}
 #vDia .perigo-zona{margin-top:24px}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.chips button{min-height:40px;padding:6px 12px;border-radius:20px;font-size:.9rem;width:auto}
+.chips button[aria-pressed=true]{background:var(--acbg);color:#fff}
+.parte{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,110px);gap:8px;margin:8px 4px 8px 0}.parte>*{min-width:0;width:100%;box-sizing:border-box}
+#rFalta{font-weight:600}
