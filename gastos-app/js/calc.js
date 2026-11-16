@@ -133,7 +133,19 @@ const Calc = (() => {
     const pct = alvo > 0 ? Math.max(0, atual) / alvo * 100 : 0;
     return { pct, barra: Math.min(100, pct), faltam: Math.max(0, alvo - atual), atingida: atual >= alvo };
   }
-  return { textoSemana, ocorrencias, proxima, historico, progresso, TIPOS, addDays, diasEntre, diaSemana, efeito, serie, total, gastosMes, CONTAGEM, chave, inicioDe, fimDe, anterior, janela,
+  // ---------- Períodos (uma vista filtrada dos dias normais, nunca uma cópia) ----------
+  const diasDe = p => diasEntre(p.start, p.end) + 1;
+  const sobrepoe = (a, b) => a.start <= b.end && b.start <= a.end;
+  /** Primeiro período da lista que se sobrepõe a p (ignorando o próprio, ao editar), ou null. */
+  const conflito = (lista, p, ignorar) => lista.find(x => x.id !== ignorar && sobrepoe(x, p)) || null;
+  const periodoDe = (lista, iso) => lista.find(p => iso >= p.start && iso <= p.end) || null;
+  function resumoPeriodo(s, movs, p) {
+    const dias = diasDe(p), ganho = somaTipo(movs, 'ganho', p.start, p.end), gasto = somaTipo(movs, 'gasto', p.start, p.end),
+      investimento = somaTipo(movs, 'investimento', p.start, p.end);
+    return { dias, ganho, gasto, investimento, ajuste: somaTipo(movs, 'ajuste', p.start, p.end), sobra: ganho - gasto - investimento,
+      mediaGasto: Math.round(gasto / dias), poupFim: total(s, movs, p.end).poup };
+  }
+  return { diasDe, sobrepoe, conflito, periodoDe, resumoPeriodo, textoSemana, ocorrencias, proxima, historico, progresso, TIPOS, addDays, diasEntre, diaSemana, efeito, serie, total, gastosMes, CONTAGEM, chave, inicioDe, fimDe, anterior, janela,
     rotulo, titulo, agrupar, evolucao, somaTipo, gastosPorCategoria, diasComInvestimento };
 })();
 if (typeof module !== 'undefined') module.exports = Calc;

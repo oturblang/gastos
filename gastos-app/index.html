@@ -17,6 +17,7 @@
   <button type="button" data-v="Tabela">Tabela</button>
   <button type="button" data-v="Poupanca">Poupança</button>
   <button type="button" data-v="Invest">Investimentos</button>
+  <button type="button" data-v="Periodos">Períodos</button>
 </nav>
 <div id="bloqueio" role="alert" hidden></div>
 
@@ -140,6 +141,8 @@
 
   <div id="vPoupanca" class="vista" hidden></div>
   <div id="vInvest" class="vista" hidden></div>
+  <div id="vPeriodos" class="vista" hidden></div>
+  <div id="vPeriodo" class="vista" hidden></div>
   <div id="vDia" class="vista" hidden></div>
 </main>
 
@@ -197,6 +200,24 @@
   </form>
 </dialog>
 
+<dialog id="dPer">
+  <form id="fPer" novalidate>
+    <h3 id="pTitulo"></h3>
+    <label for="pNome">Nome (ex.: Viagem a Roma)</label>
+    <input id="pNome" autocomplete="off" aria-describedby="epNome">
+    <p class="erro" id="epNome" role="alert"></p>
+    <label for="pIni">Data de início</label>
+    <input id="pIni" type="date" aria-describedby="epIni">
+    <p class="erro" id="epIni" role="alert"></p>
+    <label for="pFim">Data de fim</label>
+    <input id="pFim" type="date" aria-describedby="epFim">
+    <p class="erro" id="epFim" role="alert"></p>
+    <label for="pNota">Nota (opcional)</label>
+    <input id="pNota" autocomplete="off">
+    <div class="linha"><button type="button" id="pCancel">Cancelar</button><button type="submit" class="primario">Guardar</button></div>
+  </form>
+</dialog>
+
 <dialog id="dRec">
   <form id="fRec" novalidate>
     <h3 id="cTitulo"></h3>
@@ -230,6 +251,7 @@
 <script src="js/demo.js"></script>
 <script src="js/poupanca.js"></script>
 <script src="js/invest.js"></script>
+<script src="js/periodos.js"></script>
 <script src="js/registo.js"></script>
 </body>
 </html>

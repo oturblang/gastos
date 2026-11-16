@@ -101,6 +101,7 @@ const Registo = (() => {
     const d = diaAtual, movs = E.movs.filter(m => m.date === d).sort((a, b) => a.id - b.id);
     const desc = (E.days.find(x => x.date === d) || {}).text || '';
     $('vDia').innerHTML = '<button type="button" id="dVoltar">Voltar à tabela</button><h2>' + Calc.diaSemana(d) + ', ' + Util.isoToPt(d) + '</h2>' +
+      ((per => per ? '<p>Período: <button type="button" class="dia" data-per="' + per.id + '">' + esc(per.name) + '</button></p>' : '')(Calc.periodoDe(E.pers, d))) +
       '<label for="dDesc">Descrição do dia</label><textarea id="dDesc">' + esc(desc) + '</textarea>' +
       '<button type="button" id="dGuardar" class="primario">Guardar descrição</button><h3>Movimentos</h3>' +
       (movs.length ? '<ul class="movs">' + movs.map(m => '<li><span><strong>' + NOME[m.type] + '</strong> ' + Util.fmtEUR(m.cents) + '<br>' + esc(catNome(m.categoryId)) +
@@ -220,6 +221,7 @@ const Registo = (() => {
     $('vDia').addEventListener('click', e => {
       const t = e.target;
       if (t.id === 'dVoltar') App.ir('Tabela');
+      else if (t.dataset.per) Per.abrir(Number(t.dataset.per));
       else if (t.id === 'dGuardar') guardarDesc();
       else if (t.id === 'dAdd') abrirReg({ date: diaAtual });
       else if (t.id === 'dApagarDia') apagarDia(diaAtual);
@@ -247,7 +249,7 @@ const Registo = (() => {
     $('addFim').addEventListener('click', () => mudarIntervalo('fim'));
     $('addIni').addEventListener('click', () => mudarIntervalo('inicio'));
   }
-  return { iniciar, focarHoje, rapido, editarMov: m => abrirReg({ mov: m }), apagarMov };
+  return { abrirDia, iniciar, focarHoje, rapido, editarMov: m => abrirReg({ mov: m }), apagarMov };
 })();
-Metas.iniciar(); Poup.iniciar(); Invest.iniciar(); Registo.iniciar();
+Metas.iniciar(); Poup.iniciar(); Invest.iniciar(); Per.iniciar(); Registo.iniciar();
 App.iniciar();

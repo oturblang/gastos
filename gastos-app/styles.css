@@ -111,6 +111,12 @@ table.hist{width:100%}
 .recs{list-style:none;padding:0}.recs li{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--bd)}
 .estado{font-weight:700}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-@media (max-width:520px){nav{gap:4px;padding:8px}nav button{padding:4px 2px;font-size:.8rem;min-width:0;flex:1}nav button[data-v=Invest]{flex:1.7}nav button[data-v=Inicio],nav button[data-v=Tabela]{flex:.8}}
+@media (max-width:520px){nav{gap:4px;padding:8px;overflow-x:auto}nav button{padding:4px 12px;font-size:.88rem;flex:0 0 auto}}
 table.hist td{text-align:left}table.hist td.num{text-align:right;white-space:nowrap}
 #vPoupanca h3,#vInvest h3{margin-top:22px}
+
+.pers{list-style:none;padding:0}.pers li{margin-bottom:8px}
+.pers button.item{display:block;width:100%;margin:0;text-align:left;border-color:var(--bd);color:var(--tx);padding:10px 14px}
+.pers .nm{font-weight:700;color:var(--ac)}.pers .sub{font-weight:400;color:var(--mut)}
+.nota-per{white-space:pre-line}
+#vPeriodo .tabwrap{width:fit-content;max-width:100%}

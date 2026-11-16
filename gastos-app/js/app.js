@@ -2,12 +2,12 @@
 /* Estado partilhado, navegação, mensagens, categorias, valores iniciais, backup e armazenamento. */
 const App = (() => {
   const $ = id => document.getElementById(id);
-  const VISTAS = ['Inicio', 'Tabela', 'Poupanca', 'Invest', 'Dia'];
+  const VISTAS = ['Inicio', 'Tabela', 'Poupanca', 'Invest', 'Periodos', 'Periodo', 'Dia'];
   const CATS_BASE = ['Comida', 'Transportes', 'Experiências', 'Saúde', 'Casa', 'Outros'];
   const padrao = () => ({ initialSavings: 0, initialInvested: 0, startDate: Util.todayISO(), backupReminderDays: 14,
     lastBackup: null, catsSeeded: false, configured: false, tableFrom: null, tableTo: null });
   /** Estado em memória. Só guardamos movimentos e valores iniciais; o resto calcula-se (ver calc.js). */
-  const E = { settings: padrao(), existe: false, movs: [], cats: [], days: [], recs: [], goals: [] };
+  const E = { settings: padrao(), existe: false, movs: [], cats: [], days: [], recs: [], goals: [], pers: [] };
   const ouvintes = [];
   const aoAtualizar = f => ouvintes.push(f);
   let ultimaConfig = null, novaCat = null;
@@ -38,15 +38,18 @@ const App = (() => {
   }
   function ir(v) {
     VISTAS.forEach(x => { $('v' + x).hidden = x !== v; });
-    const nav = v === 'Dia' ? 'Tabela' : v;
-    document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-current', b.dataset.v === nav ? 'page' : 'false'));
+    const nav = v === 'Dia' ? 'Tabela' : v === 'Periodo' ? 'Periodos' : v;
+    document.querySelectorAll('nav button').forEach(b => {
+      b.setAttribute('aria-current', b.dataset.v === nav ? 'page' : 'false');
+      if (b.dataset.v === nav && b.parentElement.scrollWidth > b.parentElement.clientWidth) b.parentElement.scrollLeft = b.offsetLeft - 16;
+    });
     window.scrollTo(0, 0);
     document.dispatchEvent(new CustomEvent('vista', { detail: v }));
   }
   async function guardar() { await DB.setSettings(E.settings); E.existe = true; }
   async function carregar() {
     E.movs = await DB.all('movements'); E.cats = await DB.all('categories'); E.days = await DB.all('days');
-    E.recs = await DB.all('recurrences'); E.goals = await DB.all('goals');
+    E.recs = await DB.all('recurrences'); E.goals = await DB.all('goals'); E.pers = await DB.all('periods');
   }
   /** Cria os investimentos recorrentes que faltam (sem duplicar). Corre ao abrir a app e quando volta a ficar visível. */
   async function gerarRec() {

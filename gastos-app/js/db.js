@@ -77,6 +77,10 @@ const DB = (() => {
       return falha('Há investimentos recorrentes inválidos no backup.');
     if (d.goals.some(g => !['poupanca', 'investimento'].includes(g.kind) || !Number.isSafeInteger(g.targetCents) || g.targetCents <= 0 || (g.date != null && !Util.validISO(g.date))))
       return falha('Há metas inválidas no backup.');
+    if (d.periods.some(p => typeof p.name !== 'string' || !p.name.trim() || !Util.validISO(p.start) || !Util.validISO(p.end) || p.end < p.start))
+      return falha('Há períodos inválidos no backup.');
+    for (let i = 0; i < d.periods.length; i++) for (let j = i + 1; j < d.periods.length; j++)
+      if (Calc.sobrepoe(d.periods[i], d.periods[j])) return falha('Há períodos que se sobrepõem no backup.');
     if (d.days === undefined) d.days = [];
     if (!Array.isArray(d.days) || d.days.some(x => !x || !Util.validISO(x.date) || typeof x.text !== 'string')) return falha('As descrições dos dias no backup são inválidas.');
     return { ok: true, resumo: { settings: s, movimentos: d.movements.length, dias: d.days.length, categorias: d.categories.length,

@@ -1,4 +1,4 @@
-# Gastos — Fase 3 (Poupança e investimentos)
+# Gastos — Fase 4 (Períodos)
 
 ## Publicar no GitHub Pages
 1. Cria um repositório no GitHub (ex.: `gastos`).
@@ -25,3 +25,8 @@ A app só funciona por `https` ou `localhost` (não abrindo o ficheiro diretamen
 - **Apagar**: colunas (primeira ou última), conteúdo de um dia e categorias, sempre com confirmação e «Desfazer».
 - **Tabela**: o dia escolhido em «Ir» fica destacado a azul, com a etiqueta «escolhido».
 - Backup passa à versão 3 (os backups antigos continuam a ser aceites).
+
+## Novidades da Fase 4
+- **Períodos**: lista, criar, editar e apagar. Os períodos não se podem sobrepor (a app avisa e diz qual é o outro).
+- **Página do período**: totais, média de gastos por dia, tabela, gráficos e categorias só desse intervalo. É uma vista dos dias normais: apagar o período não apaga movimentos, e os dias contam sempre nos totais globais.
+- Na página do dia aparece o período a que o dia pertence.
