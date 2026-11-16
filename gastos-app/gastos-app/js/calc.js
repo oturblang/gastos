@@ -1,0 +1,109 @@
+'use strict';
+/* Cálculos puros (sem interface). Tudo é recalculado a partir dos movimentos guardados. Valores em cêntimos. */
+const Calc = (() => {
+  const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  const MESES_LONGOS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  const TIPOS = ['ganho', 'gasto', 'investimento', 'ajuste'];
+  const addDays = (iso, n) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const diasEntre = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 864e5);
+  const diaSemana = iso => DIAS[new Date(iso + 'T00:00:00Z').getUTCDay()];
+  const isoPt = k => k.slice(8, 10) + '/' + k.slice(5, 7) + '/' + k.slice(0, 4);
+  /** Variação da poupança causada por um movimento (ganhos e ajustes somam; gastos e investimentos subtraem). */
+  const efeito = m => (m.type === 'ganho' || m.type === 'ajuste') ? m.cents : -m.cents;
+
+  /** Colunas de n dias a partir de `de`. Os movimentos anteriores a `de` entram no saldo de partida. */
+  function serie(s, movs, de, n) {
+    let poup = s.initialSavings || 0, cap = s.initialInvested || 0;
+    const porDia = {};
+    for (const m of movs) {
+      if (m.date < de) { poup += efeito(m); if (m.type === 'investimento') cap += m.cents; }
+      else (porDia[m.date] = porDia[m.date] || []).push(m);
+    }
+    const cols = [];
+    for (let i = 0; i < n; i++) {
+      const date = addDays(de, i);
+      const c = { date, v: { ganho: 0, gasto: 0, investimento: 0, ajuste: 0 }, n: { ganho: 0, gasto: 0, investimento: 0, ajuste: 0 } };
+      for (const m of porDia[date] || []) { c.v[m.type] += m.cents; c.n[m.type]++; }
+      c.sobra = c.v.ganho - c.v.gasto - c.v.investimento;   // os ajustes não entram na sobra do dia
+      poup += c.sobra + c.v.ajuste; cap += c.v.investimento;
+      c.poup = poup; c.capital = cap;
+      cols.push(c);
+    }
+    return cols;
+  }
+  /** Poupança e capital investido no fim do dia `ate`. */
+  function total(s, movs, ate) {
+    let poup = s.initialSavings || 0, cap = s.initialInvested || 0;
+    for (const m of movs) if (m.date <= ate) { poup += efeito(m); if (m.type === 'investimento') cap += m.cents; }
+    return { poup, capital: cap };
+  }
+  /** Gastos do mês de `iso`, até esse dia. */
+  function gastosMes(movs, iso) {
+    let t = 0;
+    for (const m of movs) if (m.type === 'gasto' && m.date <= iso && m.date.slice(0, 7) === iso.slice(0, 7)) t += m.cents;
+    return t;
+  }
+
+  // ---------- Períodos para os gráficos (dia, semana, mês, ano) ----------
+  const CONTAGEM = { dia: 14, semana: 8, mes: 12, ano: 5 };
+  const inicioSemana = iso => addDays(iso, -((new Date(iso + 'T00:00:00Z').getUTCDay() + 6) % 7));   // semanas começam à segunda
+  function chave(iso, modo) {
+    return modo === 'dia' ? iso : modo === 'semana' ? inicioSemana(iso) : modo === 'mes' ? iso.slice(0, 7) : iso.slice(0, 4);
+  }
+  const inicioDe = (k, modo) => modo === 'mes' ? k + '-01' : modo === 'ano' ? k + '-01-01' : k;
+  function fimDe(k, modo) {
+    if (modo === 'dia') return k;
+    if (modo === 'semana') return addDays(k, 6);
+    if (modo === 'mes') { const [y, m] = k.split('-').map(Number); return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10); }
+    return k + '-12-31';
+  }
+  function anterior(k, modo, n) {
+    if (modo === 'dia') return addDays(k, -n);
+    if (modo === 'semana') return addDays(k, -7 * n);
+    if (modo === 'mes') { const [y, m] = k.split('-').map(Number), t = y * 12 + (m - 1) - n; return Math.floor(t / 12) + '-' + String(t % 12 + 1).padStart(2, '0'); }
+    return String(Number(k) - n);
+  }
+  /** Chaves dos períodos que terminam no período de `hoje`, do mais antigo para o mais recente. */
+  function janela(modo, hoje) {
+    const fim = chave(hoje, modo), keys = [];
+    for (let i = CONTAGEM[modo] - 1; i >= 0; i--) keys.push(anterior(fim, modo, i));
+    return keys;
+  }
+  function rotulo(k, modo) {
+    if (modo === 'dia' || modo === 'semana') return k.slice(8, 10) + '/' + k.slice(5, 7);
+    if (modo === 'mes') return MESES[Number(k.slice(5, 7)) - 1] + ' ' + k.slice(2, 4);
+    return k;
+  }
+  function titulo(k, modo) {
+    if (modo === 'dia') return diaSemana(k) + ', ' + isoPt(k);
+    if (modo === 'semana') return 'Semana de ' + isoPt(k);
+    if (modo === 'mes') return MESES_LONGOS[Number(k.slice(5, 7)) - 1] + ' de ' + k.slice(0, 4);
+    return k;
+  }
+  /** Totais de ganhos, gastos e investimentos por período. */
+  function agrupar(movs, modo, keys) {
+    const idx = {}; keys.forEach((k, i) => { idx[k] = i; });
+    const out = keys.map(k => ({ key: k, ganho: 0, gasto: 0, investimento: 0, ajuste: 0 }));
+    for (const m of movs) { const i = idx[chave(m.date, modo)]; if (i !== undefined) out[i][m.type] += m.cents; }
+    return out;
+  }
+  /** Poupança e capital investido no fim de cada período (o período em curso conta até hoje). */
+  function evolucao(s, movs, modo, keys, hoje) {
+    return keys.map(k => { const fim = fimDe(k, modo); return { key: k, ...total(s, movs, fim > hoje ? hoje : fim) }; });
+  }
+  const somaTipo = (movs, tipo, de, ate) => movs.reduce((t, m) => t + (m.type === tipo && m.date >= de && m.date <= ate ? m.cents : 0), 0);
+  function gastosPorCategoria(movs, de, ate) {
+    const mapa = new Map();
+    for (const m of movs) if (m.type === 'gasto' && m.date >= de && m.date <= ate) mapa.set(m.categoryId == null ? null : m.categoryId, (mapa.get(m.categoryId == null ? null : m.categoryId) || 0) + m.cents);
+    return mapa;
+  }
+  function diasComInvestimento(movs, de, ate) {
+    const s = new Set();
+    for (const m of movs) if (m.type === 'investimento' && m.date >= de && m.date <= ate) s.add(m.date);
+    return s.size;
+  }
+  return { TIPOS, addDays, diasEntre, diaSemana, efeito, serie, total, gastosMes, CONTAGEM, chave, inicioDe, fimDe, anterior, janela,
+    rotulo, titulo, agrupar, evolucao, somaTipo, gastosPorCategoria, diasComInvestimento };
+})();
+if (typeof module !== 'undefined') module.exports = Calc;

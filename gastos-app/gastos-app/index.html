@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gastos</title>
+<meta name="theme-color" content="#0f5c6e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header><h1>Gastos</h1><p id="off">A preparar o modo offline…</p></header>
+<nav aria-label="Secções">
+  <button type="button" data-v="Inicio">Início</button>
+  <button type="button" data-v="Tabela">Tabela</button>
+</nav>
+<div id="bloqueio" role="alert" hidden></div>
+
+<main>
+  <div id="vInicio" class="vista">
+    <h2>Início</h2>
+    <div id="aviso" role="status" hidden></div>
+    <p id="intro">Bem-vindo! Para começar, preenche os valores de partida e guarda. A tabela é criada logo a seguir e depois é só ir preenchendo.</p>
+
+    <section id="secDemo" aria-labelledby="hDemo" hidden>
+      <h3 id="hDemo" class="titulo-sec">Demonstração</h3>
+      <div id="periodos" class="seg" role="group" aria-label="Período dos gráficos">
+        <button type="button" data-m="dia" aria-pressed="true">Dias</button>
+        <button type="button" data-m="semana" aria-pressed="false">Semanas</button>
+        <button type="button" data-m="mes" aria-pressed="false">Meses</button>
+        <button type="button" data-m="ano" aria-pressed="false">Anos</button>
+      </div>
+      <p id="periodoTxt" class="mut"></p>
+      <dl id="kpis" class="kpis"></dl>
+      <p id="demoVazio" class="vazio" hidden>Ainda não há movimentos. Preenche a Tabela (ou carrega em «+ Registar») e os gráficos aparecem aqui.</p>
+      <div id="demoGraficos">
+        <figure class="graf">
+          <figcaption>Ganhos, gastos e investido</figcaption>
+          <div id="gBarras"></div><div id="lgBarras"></div>
+          <details class="tabela-det"><summary>Ver valores em tabela</summary><div class="scroll"><table id="tbBarras" class="simples"></table></div></details>
+        </figure>
+        <figure class="graf">
+          <figcaption>Poupança e capital investido</figcaption>
+          <div id="gLinha"></div><div id="lgLinha"></div>
+        </figure>
+        <figure class="graf">
+          <figcaption>Gastos por categoria</figcaption>
+          <div id="gDonut"></div>
+        </figure>
+      </div>
+    </section>
+
+    <details id="dIniciais" class="caixa" open>
+      <summary>Valores iniciais</summary>
+      <form id="fIniciais" novalidate>
+        <label for="iSav">Saldo inicial da poupança (€)</label>
+        <input id="iSav" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-describedby="eSav">
+        <p class="erro" id="eSav" role="alert"></p>
+        <label for="iInv">Valor já investido (€)</label>
+        <input id="iInv" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-describedby="eInv">
+        <p class="erro" id="eInv" role="alert"></p>
+        <label for="iDate">Data de início</label>
+        <input id="iDate" type="date" aria-describedby="eDate">
+        <p class="erro" id="eDate" role="alert"></p>
+        <button id="bIniciais" class="primario" type="submit">Guardar e criar a tabela</button>
+      </form>
+    </details>
+
+    <details class="caixa" id="dCats">
+      <summary>Categorias</summary>
+      <p>As categorias são opcionais. Arquivar esconde a categoria nos novos registos, mas mantém os antigos.</p>
+      <ul id="listaCats"></ul>
+      <form id="fCat" novalidate>
+        <label for="iCat">Nova categoria</label>
+        <input id="iCat" autocomplete="off">
+        <button type="submit">Adicionar categoria</button>
+      </form>
+    </details>
+
+    <details class="caixa">
+      <summary>Backup</summary>
+      <p id="ultimo"></p>
+      <button id="bExp" type="button" class="primario">Exportar backup (JSON)</button>
+      <button id="bImp" type="button">Importar backup</button>
+      <input id="fImp" type="file" accept="application/json,.json" hidden>
+      <form id="fDias" novalidate>
+        <label for="iDias">Lembrar-me do backup ao fim de (dias)</label>
+        <input id="iDias" inputmode="numeric" autocomplete="off" aria-describedby="eDias">
+        <p class="erro" id="eDias" role="alert"></p>
+        <button type="submit">Guardar lembrete</button>
+      </form>
+    </details>
+
+    <details class="caixa">
+      <summary>Armazenamento</summary>
+      <p id="stor">A verificar…</p>
+    </details>
+
+    <details class="caixa">
+      <summary>Apagar todos os dados</summary>
+      <p>Remove todos os dados guardados neste dispositivo. Exporta um backup antes.</p>
+      <button id="bDel" type="button" class="perigo">Apagar todos os dados</button>
+    </details>
+  </div>
+
+  <div id="vTabela" class="vista" hidden>
+    <h2>Tabela</h2>
+    <div id="tabVazia" class="vazio" hidden>
+      <p>A tabela é criada quando guardares os valores iniciais no Início.</p>
+      <button type="button" id="irInicio" class="primario">Ir para o Início</button>
+    </div>
+    <div id="tabConteudo">
+      <p class="mut">Escreve nos campos de Ganhos, Gastos, Investido e Ajustes. As outras linhas calculam-se sozinhas. Enter passa para a linha de baixo.</p>
+      <div class="barra acoes">
+        <label for="addN">Adicionar</label>
+        <input id="addN" class="curto" inputmode="numeric" value="1" aria-describedby="eAdd">
+        <span>dias</span>
+        <button type="button" id="addIni">no início</button><button type="button" id="addFim">no fim</button><button type="button" id="bHoje">Ir para hoje</button>
+      </div>
+      <p class="erro" id="eAdd" role="alert"></p>
+      <div class="tabwrap" id="tabWrap" tabindex="0" aria-label="Tabela de dias, desliza para os lados"><table id="tab"></table></div>
+      <details class="caixa">
+        <summary>Ir para uma data</summary>
+        <form id="fIr" class="barra" novalidate>
+          <label for="irData">Data</label>
+          <input id="irData" type="date"><button type="submit">Ir</button>
+        </form>
+      </details>
+    </div>
+  </div>
+
+  <div id="vDia" class="vista" hidden></div>
+</main>
+
+<button id="fab" type="button" class="primario" hidden>+ Registar</button>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<div id="tip" role="presentation" hidden></div>
+
+<dialog id="dlg">
+  <form method="dialog">
+    <h3 id="dlgTitle"></h3>
+    <p id="dlgText"></p>
+    <div class="linha">
+      <button value="cancel">Cancelar</button>
+      <button value="ok" id="dlgOk" class="primario"></button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dReg">
+  <form id="fReg" novalidate>
+    <h3 id="rTitulo">Registar movimento</h3>
+    <label for="rTipo">Tipo</label>
+    <select id="rTipo">
+      <option value="gasto">Gasto</option><option value="ganho">Ganho</option>
+      <option value="investimento">Investimento</option><option value="ajuste">Ajuste da poupança</option>
+    </select>
+    <p id="rDica" hidden>Ajuste: escreve um valor positivo para aumentar a poupança ou negativo (ex.: -3,20) para diminuir.</p>
+    <label for="rValor">Valor (€)</label>
+    <input id="rValor" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-describedby="eValor">
+    <p class="erro" id="eValor" role="alert"></p>
+    <label for="rData">Data</label>
+    <input id="rData" type="date" aria-describedby="eData">
+    <p class="erro" id="eData" role="alert"></p>
+    <label for="rCat">Categoria (opcional)</label>
+    <select id="rCat"></select>
+    <label for="rDesc">Descrição (opcional)</label>
+    <input id="rDesc" autocomplete="off">
+    <div class="linha"><button type="button" id="rCancel">Cancelar</button><button type="submit" class="primario">Guardar</button></div>
+  </form>
+</dialog>
+
+<script src="js/util.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/db.js"></script>
+<script src="js/app.js"></script>
+<script src="js/graficos.js"></script>
+<script src="js/demo.js"></script>
+<script src="js/registo.js"></script>
+</body>
+</html>
