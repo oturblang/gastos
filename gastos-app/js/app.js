@@ -47,11 +47,16 @@ const App = (() => {
       s.innerHTML = '<button type="button" class="voltar" data-ir="Mais">‹ Mais</button>'; s.hidden = false;
     } else { s.textContent = ''; s.hidden = true; }
   }
+  let vistaAtual = 'Inicio';
+  const COM_FAB = ['Inicio', 'Tabela', 'Poupanca', 'Invest', 'Dia'];
+  /** O botão «+» só aparece nos ecrãs onde faz sentido registar. */
+  function fabVis() { $('fab').hidden = !(E.settings.configured && COM_FAB.includes(vistaAtual)); }
   function ir(v) {
+    vistaAtual = v;
     VISTAS.forEach(x => { $('v' + x).hidden = x !== v; });
     const nav = NAV[v] || v;
     document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-current', b.dataset.v === nav ? 'page' : 'false'));
-    subBar(v);
+    subBar(v); fabVis();
     window.scrollTo(0, 0);
     document.dispatchEvent(new CustomEvent('vista', { detail: v }));
   }
@@ -86,7 +91,7 @@ const App = (() => {
   }
   function desenharEstado() {
     const s = E.settings, cfg = s.configured;
-    $('fab').hidden = !cfg;
+    fabVis();
     $('intro').hidden = cfg;
     $('bIniciais').textContent = cfg ? 'Guardar alterações' : 'Guardar e criar a tabela';
     $((cfg ? 'slotIniciaisDef' : 'slotIniciais')).append($('dIniciais'));   // 1.ª vez: aparece no Início; depois fica nas Definições

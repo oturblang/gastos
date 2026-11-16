@@ -58,22 +58,7 @@
       <p id="periodoTxt" class="mut"></p>
       <div id="metasDemo" class="metas"></div>
       <dl id="kpis" class="kpis"></dl>
-      <p id="demoVazio" class="vazio" hidden>Ainda não há movimentos. Preenche a Tabela (ou carrega em «+ Registar») e os gráficos aparecem aqui.</p>
-      <div id="demoGraficos">
-        <figure class="graf">
-          <figcaption>Ganhos, gastos e investido</figcaption>
-          <div id="gBarras"></div><div id="lgBarras"></div>
-          <details class="tabela-det"><summary>Ver valores em tabela</summary><div class="scroll"><table id="tbBarras" class="simples"></table></div></details>
-        </figure>
-        <figure class="graf">
-          <figcaption>Poupança e capital investido</figcaption>
-          <div id="gLinha"></div><div id="lgLinha"></div>
-        </figure>
-        <figure class="graf">
-          <figcaption>Gastos por categoria</figcaption>
-          <div id="gDonut"></div>
-        </figure>
-      </div>
+      <p id="demoVazio" class="vazio" hidden>Ainda não há movimentos. Preenche a Tabela (ou carrega no «+») e os números aparecem aqui. Os gráficos estão no separador Gráficos.</p>
     </section>
 
     <div id="slotIniciais"></div>
@@ -138,6 +123,7 @@
     <div id="slotIniciaisDef"></div>
     <details id="dIniciais" class="caixa" open>
       <summary>Valores iniciais</summary>
+      <p class="mut">«Poupança» é o dinheiro que tens disponível (conta, carteira). «Já investido» é o dinheiro que já puseste em investimentos. Exemplo: 1 200 € na conta e 3 000 € já investidos.</p>
       <form id="fIniciais" novalidate>
         <label for="iSav">Saldo inicial da poupança (€)</label>
         <input id="iSav" inputmode="decimal" autocomplete="off" placeholder="0,00" aria-describedby="eSav">
@@ -266,7 +252,7 @@
   <div id="vDia" class="vista" hidden></div>
 </main>
 
-<button id="fab" type="button" class="primario" hidden>+ Registar</button>
+<button id="fab" type="button" class="primario" aria-label="Registar movimento" title="Registar movimento" hidden>+</button>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <div id="tip" role="presentation" hidden></div>
 
@@ -280,6 +266,18 @@
     <input id="sgB" type="password" autocomplete="off">
     <p class="erro" id="sgErro" role="alert"></p>
     <div class="linha"><button type="button" id="sgCancel">Cancelar</button><button type="submit" id="sgOk" class="primario">Guardar</button></div>
+  </form>
+</dialog>
+
+<dialog id="dMov">
+  <form method="dialog">
+    <h3 id="amTit"></h3>
+    <p id="amTxt"></p>
+    <div class="coluna">
+      <button type="button" id="amEd" class="primario">Editar</button>
+      <button type="button" id="amAp" class="perigo">Apagar</button>
+      <button value="cancel">Fechar</button>
+    </div>
   </form>
 </dialog>
 

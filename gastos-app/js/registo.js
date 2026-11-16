@@ -107,13 +107,27 @@ const Registo = (() => {
     if (!diaAtual) return;
     const d = diaAtual, movs = E.movs.filter(m => m.date === d).sort((a, b) => a.id - b.id);
     const desc = (E.days.find(x => x.date === d) || {}).text || '';
+    const lista = movs.length ? '<ul class="movs">' + movs.map(m => '<li><span><strong>' + NOME[m.type] + '</strong> ' + Util.fmtEUR(m.cents) + '<br>' + esc(catNome(m.categoryId)) +
+        (m.desc ? ' - ' + esc(m.desc) : '') + '</span><span><button type="button" data-ed="' + m.id + '">Editar</button><button type="button" class="perigo" data-ap="' + m.id + '">Apagar</button></span></li>').join('') + '</ul>'
+        : '<p>Sem movimentos neste dia.</p>';
     $('vDia').innerHTML = '<button type="button" id="dVoltar">Voltar à tabela</button><h2>' + Calc.diaSemana(d) + ', ' + Util.isoToPt(d) + '</h2>' +
       ((per => per ? '<p>Período: <button type="button" class="dia" data-per="' + per.id + '">' + esc(per.name) + '</button></p>' : '')(Calc.periodoDe(E.pers, d))) +
-      '<label for="dDesc">Descrição do dia</label><textarea id="dDesc">' + esc(desc) + '</textarea>' +
-      '<button type="button" id="dGuardar" class="primario">Guardar descrição</button><h3>Movimentos</h3>' +
-      (movs.length ? '<ul class="movs">' + movs.map(m => '<li><span><strong>' + NOME[m.type] + '</strong> ' + Util.fmtEUR(m.cents) + '<br>' + esc(catNome(m.categoryId)) +
-        (m.desc ? ' - ' + esc(m.desc) : '') + '</span><span><button type="button" data-ed="' + m.id + '">Editar</button><button type="button" class="perigo" data-ap="' + m.id + '">Apagar</button></span></li>').join('') + '</ul>'
-        : '<p>Sem movimentos neste dia.</p>') + '<button type="button" id="dAdd" class="primario">+ Adicionar movimento</button><button type="button" id="dApagarDia" class="perigo">Apagar este dia</button>';
+      '<h3>Movimentos</h3>' + lista + '<button type="button" id="dAdd" class="primario">+ Adicionar movimento</button>' +
+      '<label for="dDesc">Descrição do dia</label><textarea id="dDesc" rows="2">' + esc(desc) + '</textarea>' +
+      '<button type="button" id="dGuardar">Guardar descrição</button>' +
+      '<div class="perigo-zona"><button type="button" id="dApagarDia" class="perigo">Apagar este dia</button></div>';
+    cresce($('dDesc'));
+  }
+  /** A caixa da descrição começa pequena (2 linhas) e cresce ao escrever. */
+  function cresce(t) { if (!t) return; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight + 2, 320) + 'px'; }
+  // ---------- Opções de um movimento (toque numa linha do histórico) ----------
+  let movAcoes = null;
+  function acoes(m) {
+    if (!m) return;
+    movAcoes = m;
+    $('amTit').textContent = NOME[m.type] + ' de ' + Util.fmtEUR(m.cents);
+    $('amTxt').textContent = Util.isoToPt(m.date) + [catNome(m.categoryId), m.desc].filter(Boolean).map(x => ' · ' + x).join('') + (m.recId != null ? ' · recorrente' : '');
+    $('dMov').showModal();
   }
   function abrirDia(d) { diaAtual = d; desenharDia(); App.ir('Dia'); }
   async function guardarDesc() {
@@ -236,6 +250,9 @@ const Registo = (() => {
       else if (t.dataset.ap) apagarMov(E.movs.find(m => m.id === Number(t.dataset.ap)));
     });
     $('vDia').addEventListener('change', e => { if (e.target.id === 'dDesc') guardarDesc(); });
+    $('vDia').addEventListener('input', e => { if (e.target.id === 'dDesc') cresce(e.target); });
+    $('amEd').addEventListener('click', () => { const m = movAcoes; $('dMov').close(); if (m) abrirReg({ mov: m }); });
+    $('amAp').addEventListener('click', () => { const m = movAcoes; $('dMov').close(); if (m) apagarMov(m); });
     $('fab').addEventListener('click', () => abrirReg({ date: !$('vDia').hidden && diaAtual ? diaAtual : Util.todayISO() }));
     $('fReg').addEventListener('submit', submeterReg);
     $('fQuick').addEventListener('submit', submeterQuick);
@@ -256,7 +273,7 @@ const Registo = (() => {
     $('addFim').addEventListener('click', () => mudarIntervalo('fim'));
     $('addIni').addEventListener('click', () => mudarIntervalo('inicio'));
   }
-  return { abrirDia, iniciar, focarHoje, rapido, editarMov: m => abrirReg({ mov: m }), apagarMov };
+  return { abrirDia, iniciar, focarHoje, rapido, acoes, editarMov: m => abrirReg({ mov: m }), apagarMov };
 })();
 Metas.iniciar(); Poup.iniciar(); Invest.iniciar(); Per.iniciar(); Analise.iniciar(); Calculos.iniciar(); Registo.iniciar();
 App.iniciar();

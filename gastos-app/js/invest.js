@@ -28,9 +28,9 @@ const Invest = (() => {
         '<button type="button" class="peq" data-rec-pa="' + r.id + '">' + (r.active ? 'Pausar' : 'Retomar') + '</button>' +
         '<button type="button" class="peq perigo" data-rec-ap="' + r.id + '">Apagar</button></span></li>';
     }).join('');
-    const lh = invs.slice(0, limite).map(m => '<tr><td>' + Util.isoToPt(m.date) + '</td><td>' + (m.recId != null ? 'Recorrente' : 'Manual') + (m.desc ? '<br>' + esc(m.desc) : '') + '</td><td class="num">' + Util.fmtEUR(m.cents) + '</td>' +
-      '<td><button type="button" class="peq" data-ed="' + m.id + '" aria-label="Editar investimento de ' + Util.isoToPt(m.date) + '">Editar</button>' +
-      '<button type="button" class="peq perigo" data-ap="' + m.id + '" aria-label="Apagar investimento de ' + Util.isoToPt(m.date) + '">Apagar</button></td></tr>').join('');
+    const lh = invs.slice(0, limite).map(m => '<li><button type="button" class="hrow" data-mov="' + m.id + '" aria-label="Investimento de ' + Util.isoToPt(m.date) + ', ' + Util.fmtEUR(m.cents) + '. Abrir opções">' +
+      '<span class="h-esq"><strong>' + (m.recId != null ? 'Recorrente' : 'Manual') + '</strong><small>' + Util.isoToPt(m.date) + (m.desc ? ' · ' + esc(m.desc) : '') + '</small></span>' +
+      '<span class="h-dir"><span class="h-val">' + Util.fmtEUR(m.cents) + '</span></span></button></li>').join('');
     v.innerHTML = '<h2>Investimentos</h2>' +
       '<dl class="kpis">' + tile('Capital investido', Util.fmtEUR(tot.capital), 'O dinheiro que colocaste, não o valor de mercado') + tile('Valor inicial investido', Util.fmtEUR(E.settings.initialInvested)) +
       tile('Investido desde o início', Util.fmtEUR(soma)) + tile('Nº de investimentos', String(invs.length)) + '</dl>' +
@@ -40,7 +40,7 @@ const Invest = (() => {
       (recs.length ? '<ul class="recs">' + lr + '</ul>' : '<p class="vazio">Ainda não há regras semanais.</p>') +
       '<button type="button" id="iNova">+ Nova regra semanal</button>' +
       '<h3>Histórico de investimentos</h3>' +
-      (invs.length ? '<div class="scroll"><table class="simples hist"><thead><tr><th scope="col">Data</th><th scope="col">Origem</th><th scope="col" class="num">Valor</th><th scope="col"><span class="sr">Ações</span></th></tr></thead><tbody>' + lh + '</tbody></table></div>' +
+      (invs.length ? '<p class="mut peq-txt">Toca num investimento para o editar ou apagar.</p><ul class="hlist">' + lh + '</ul>' +
         (invs.length > limite ? '<button type="button" id="iMais">Mostrar mais</button>' : '') : '<p class="vazio">Ainda não há investimentos.</p>');
   }
 
@@ -102,8 +102,7 @@ const Invest = (() => {
       else if (t.dataset.recEd) abrirRec(rec(t.dataset.recEd));
       else if (t.dataset.recPa) pausar(rec(t.dataset.recPa));
       else if (t.dataset.recAp) apagar(rec(t.dataset.recAp));
-      else if (t.dataset.ed) Registo.editarMov(E.movs.find(m => m.id === Number(t.dataset.ed)));
-      else if (t.dataset.ap) Registo.apagarMov(E.movs.find(m => m.id === Number(t.dataset.ap)));
+      else if (t.dataset.mov) Registo.acoes(E.movs.find(m => m.id === Number(t.dataset.mov)));
     });
   }
   return { iniciar, desenhar };

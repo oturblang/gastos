@@ -53,6 +53,7 @@ const Analise = (() => {
       tabela(['Intervalo', 'Ganhos', 'Gastos', 'Investido'], g.map((x, i) => [tit[i], Util.fmtEUR(x.ganho), Util.fmtEUR(x.gasto), Util.fmtEUR(x.investimento)])) + '</figure>' +
       '<figure class="graf"><figcaption>Poupança no fim de cada ' + UNI[modo] + '</figcaption><div id="aPoup"></div>' +
       tabela(['Intervalo', 'Poupança', 'Capital investido'], ev.map((x, i) => [tit[i], Util.fmtEUR(x.poup), Util.fmtEUR(x.capital)])) + '</figure>' +
+      '<figure class="graf"><figcaption>Poupança e capital investido</figcaption><div id="aLinha"></div>' + legenda([['Poupança', C.poupanca], ['Capital investido', C.capital]]) + '</figure>' +
       '<figure class="graf"><figcaption>Frequência de investimento</figcaption><div id="aFreq"></div>' + legenda(sFreq.map(s => [s.nome, s.cor])) +
       tabela(['Intervalo'].concat(sFreq.map(s => s.nome)), fr.map((x, i) => [tit[i]].concat(sFreq.map(s => String(x[s.k]))))) + '</figure>' +
       '<figure class="graf"><figcaption>Gastos por categoria (' + TEXTO[modo].toLowerCase() + ')</figcaption><div id="aDonut"></div></figure>';
@@ -61,6 +62,7 @@ const Analise = (() => {
     const soma = t => Calc.somaTipo(movs, t, de, hoje);
     Graficos.barras($('aBarras'), g, rot, tit, 'Barras por ' + UNI[modo] + ': ganhos ' + Util.fmtEUR(soma('ganho')) + ', gastos ' + Util.fmtEUR(soma('gasto')) + ' e investido ' + Util.fmtEUR(soma('investimento')) + ' no total.');
     Graficos.barrasGen($('aPoup'), ev, rot, tit, 'Poupança no fim de cada ' + UNI[modo] + ': de ' + Util.fmtEUR(ev[0].poup) + ' para ' + Util.fmtEUR(poupAtual) + '.', [{ k: 'poup', cor: C.poupanca, nome: 'Poupança' }], 'eur');
+    { const u = ev[ev.length - 1]; Graficos.linha($('aLinha'), ev, rot, tit, 'Evolução: poupança de ' + Util.fmtEUR(u.poup) + ' e capital investido de ' + Util.fmtEUR(u.capital) + ' no fim do período.'); }
     Graficos.barrasGen($('aFreq'), fr, rot, tit, 'Frequência de investimento por ' + UNI[modo] + ': ' + fr.reduce((a, x) => a + x.n, 0) + ' investimentos no total.', sFreq, 'n');
     const mapa = Calc.gastosPorCategoria(movs, de, hoje), totalG = [...mapa.values()].reduce((a, b) => a + b, 0);
     const lista = [...mapa.entries()].map(([id, c]) => ({ nome: id == null ? 'Sem categoria' : ((E.cats.find(x => x.id === id) || {}).name || 'Categoria apagada'), cents: c })).sort((a, b) => b.cents - a.cents);

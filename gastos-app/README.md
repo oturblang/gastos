@@ -53,3 +53,6 @@ Mais → Definições → Aspeto: Claro, Escuro ou Automático (segue o telemóv
 ## Segurança (versão 9)
 Mais → Definições → Segurança: bloqueio com PIN (4–8 números) ou palavra-passe, desbloqueio opcional com impressão digital/rosto (do próprio telemóvel) e bloqueio automático. É um fecho de ecrã: não cifra os dados guardados. A configuração fica só neste aparelho e não entra no backup. Em Backup há «Exportar backup protegido» (AES-GCM, palavra-passe com PBKDF2); a importação reconhece-o e pede a palavra-passe.
 Gráficos: em ecrãs de toque, tocar num dia fixa a informação até tocares noutro sítio.
+
+## Versão 10 (fases 1 e 2)
+Início só com o resumo (sem gráficos); o gráfico «Poupança e capital investido» está agora em Gráficos. O botão «+» é pequeno e só aparece em Início, Tabela, Poupança e Investimentos. Página do dia: movimentos primeiro e descrição pequena. Histórico da Poupança e dos Investimentos em lista, sem scroll lateral: tocar num movimento abre Editar e Apagar.
