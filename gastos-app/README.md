@@ -46,3 +46,6 @@ Os dados vivem no navegador do dispositivo. Se limpares os dados do navegador, d
 
 ## Navegação (versão 7)
 Barra no fundo com 5 itens: Início, Tabela, Gráficos, Carteira (Poupança e Investimentos) e Mais (Períodos, Cálculos e Definições). Valores iniciais, categorias, backup, exportações, armazenamento e «apagar tudo» estão em Mais → Definições.
+
+## Tema (versão 8)
+Mais → Definições → Aspeto: Claro, Escuro ou Automático (segue o telemóvel). A escolha fica só neste aparelho e não entra no backup.

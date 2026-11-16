@@ -2,9 +2,9 @@
 /* Gráficos em SVG puro (sem bibliotecas, funcionam offline). Valores em cêntimos.
    Cores: azul/laranja/verde-água validadas como conjunto (ganhos, gastos, investido); laranja em degraus para as categorias de gastos. */
 const Graficos = (() => {
-  const COR = { ganho: '#2a78d6', gasto: '#eb6834', investimento: '#1baf7a', poupanca: '#6250d6', capital: '#1baf7a' };
-  const FATIAS = ['#8a2f0e', '#b8431a', '#eb6834', '#f08f66', '#f5b49a', '#fad6c6'];
-  const OUTRAS = '#898781';
+  const COR = { ganho: 'var(--c-ganho)', gasto: 'var(--c-gasto)', investimento: 'var(--c-inv)', poupanca: 'var(--c-poup)', capital: 'var(--c-inv)' };   // as cores mudam com o tema (ver styles.css)
+  const FATIAS = ['var(--f1)', 'var(--f2)', 'var(--f3)', 'var(--f4)', 'var(--f5)', 'var(--f6)'];
+  const OUTRAS = 'var(--c-outras)';
   const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const attr = t => esc(t).replace(/\n/g, '&#10;');
 
@@ -110,7 +110,7 @@ const Graficos = (() => {
         '<rect x="' + pt(X(i) - passoX / 2) + '" y="' + MT + '" width="' + pt(passoX) + '" height="' + (H - MT - MB) + '" fill="transparent" pointer-events="all"/></g>';
     });
     series.forEach(([k, cor]) => pts.forEach((p, i) => {
-      s += '<circle cx="' + pt(X(i)) + '" cy="' + pt(y(p[k])) + '" r="4" fill="' + cor + '" stroke="#fcfcfb" stroke-width="2" pointer-events="none"/>';
+      s += '<circle cx="' + pt(X(i)) + '" cy="' + pt(y(p[k])) + '" r="4" fill="' + cor + '" stroke="var(--surf)" stroke-width="2" pointer-events="none"/>';
     }));
     // valor final de cada linha (afastados se ficarem muito juntos)
     const ult = pts[n - 1], ya = y(ult.poup), yb = y(ult.capital);

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gastos</title>
 <meta name="theme-color" content="#0f5c6e">
+<script>try{var t=localStorage.getItem("gastos-tema");if(t==="claro"||t==="escuro")document.documentElement.setAttribute("data-tema",t)}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -71,6 +72,15 @@
 
   <div id="vDefinicoes" class="vista" hidden>
     <h2>Definições</h2>
+    <details class="caixa" id="dAspeto" open>
+      <summary>Aspeto</summary>
+      <p class="mut">Só vale neste aparelho. Automático segue o modo do telemóvel.</p>
+      <div id="bTema" class="seg" role="group" aria-label="Tema da app">
+        <button type="button" data-t="claro" aria-pressed="false">Claro</button>
+        <button type="button" data-t="escuro" aria-pressed="false">Escuro</button>
+        <button type="button" data-t="auto" aria-pressed="true">Automático</button>
+      </div>
+    </details>
     <div id="slotIniciaisDef"></div>
     <details id="dIniciais" class="caixa" open>
       <summary>Valores iniciais</summary>

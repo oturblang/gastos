@@ -9,7 +9,7 @@ const Analise = (() => {
   const TEXTO = { dia: 'Últimos 14 dias', semana: 'Últimas 8 semanas (cada semana começa à segunda)', mes: 'Últimos 12 meses', ano: 'Últimos 5 anos' };
   const ATUAL = { dia: ['Hoje', 'ontem'], semana: ['Esta semana', 'a semana anterior'], mes: ['Este mês', 'o mês anterior'], ano: ['Este ano', 'o ano anterior'] };
   const UNI = { dia: 'dia', semana: 'semana', mes: 'mês', ano: 'ano' };
-  const C = Graficos.COR, COR_DIAS = '#6250d6', COR_SEM = '#e87ba4';
+  const C = Graficos.COR, COR_DIAS = 'var(--c-poup)', COR_SEM = 'var(--c-sem)';
   let modo = 'dia';
 
   const legenda = itens => '<ul class="legenda">' + itens.map(([n, c]) => '<li><span class="sw" style="background:' + c + '"></span>' + n + '</li>').join('') + '</ul>';

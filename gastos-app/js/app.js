@@ -231,6 +231,20 @@ const App = (() => {
     } catch (err) { dizer('Não foi possível apagar: ' + err.message, false); }
   });
   document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => ir(b.dataset.v)));
+  // ---------- Tema (Claro / Escuro / Automático): guardado só neste aparelho ----------
+  const mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
+  function temaGuardado() { try { const t = localStorage.getItem('gastos-tema'); return t === 'claro' || t === 'escuro' ? t : 'auto'; } catch (e) { return 'auto'; } }
+  function aplicarTema(t, guardar) {
+    const r = document.documentElement;
+    if (t === 'claro' || t === 'escuro') r.setAttribute('data-tema', t); else r.removeAttribute('data-tema');
+    if (guardar) { try { t === 'auto' ? localStorage.removeItem('gastos-tema') : localStorage.setItem('gastos-tema', t); } catch (e) { /* sem armazenamento: vale só nesta sessão */ } }
+    document.querySelectorAll('#bTema button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === t)));
+    const escuro = t === 'escuro' || (t === 'auto' && mq && mq.matches);
+    const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = escuro ? '#0d3f4c' : '#0f5c6e';
+  }
+  $('bTema').addEventListener('click', e => { const b = e.target.closest('button[data-t]'); if (b) aplicarTema(b.dataset.t, true); });
+  if (mq && mq.addEventListener) mq.addEventListener('change', () => aplicarTema(temaGuardado(), false));
+  aplicarTema(temaGuardado(), false);
   $('irInicio').addEventListener('click', () => ir('Inicio'));
   document.addEventListener('click', e => { const b = e.target.closest('button[data-ir]'); if (b) ir(b.dataset.ir); });
 
