@@ -1,4 +1,4 @@
-# Gastos — Fase 2 (Registo diário)
+# Gastos — Fase 3 (Poupança e investimentos)
 
 ## Publicar no GitHub Pages
 1. Cria um repositório no GitHub (ex.: `gastos`).
@@ -10,15 +10,18 @@
 - **Telemóvel (Android/Chrome):** menu ⋮ → *Instalar aplicação*. **iPhone/Safari:** Partilhar → *Adicionar ao ecrã principal*.
 - **Computador (Chrome/Edge):** ícone de instalar na barra de endereço.
 
-## Testar a Fase 2
-1. Definições: guarda os valores iniciais. Em Categorias deves ver as 6 sugestões.
-2. «+ Registar»: cria um gasto de `12,50` e vê o Resumo mudar.
-3. Tabela: escreve um valor na célula Ganhos de hoje; as linhas Sobra, Poupança e Capital recalculam.
-4. Toca num dia (cabeçalho): escreve a descrição do dia e adiciona, edita e apaga movimentos.
-5. Edita um dia antigo: a poupança de todos os dias seguintes muda.
-6. «Adicionar dias» no fim e no início, e «Ir para a data».
-7. Exporta e importa um backup: tudo volta igual.
+## Como funciona
+1. **Início:** preenche os valores iniciais e guarda. A tabela é criada logo a seguir.
+2. **Tabela:** escreve ganhos, gastos, investido e ajustes. Podes adicionar dias antes e depois.
+3. **Início, Demonstração:** gráficos e números calculados a partir da tabela.
 
 ## Atualizações
 Quando alterares ficheiros, aumenta `CACHE` em `sw.js` (`gastos-v2`, …) para os dispositivos receberem a versão nova.
 A app só funciona por `https` ou `localhost` (não abrindo o ficheiro diretamente).
+
+## Novidades da Fase 3
+- **Poupança**: saldo, histórico de todos os movimentos com o saldo depois de cada um, «Adicionar dinheiro», ajuste manual e meta de poupança.
+- **Investimentos**: capital investido, histórico, regras semanais (criar, editar, pausar, apagar) e meta de investimento. Ao abrir a app, os investimentos em falta são criados sem duplicar.
+- **Apagar**: colunas (primeira ou última), conteúdo de um dia e categorias, sempre com confirmação e «Desfazer».
+- **Tabela**: o dia escolhido em «Ir» fica destacado a azul, com a etiqueta «escolhido».
+- Backup passa à versão 3 (os backups antigos continuam a ser aceites).

@@ -38,6 +38,13 @@ const Util = (() => {
   }
   /** aaaa-mm-dd -> dd/mm/aaaa */
   function isoToPt(s) { return s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4); }
-  return { parseMoney, fmtEUR, toInput, validISO, todayISO, isoToPt };
+  /** Cêntimos -> texto curto para eixos: "1 500 €" (abaixo de 10 000) ou "12,5 mil €". */
+  function fmtEixo(c) {
+    const e = Math.round(c / 100), a = Math.abs(e), s = e < 0 ? '-' : '';
+    if (a < 10000) return s + String(a).replace(/\B(?=(\d{3})+(?!\d))/g, '\u00a0') + '\u00a0€';
+    if (a < 1e6) return s + String(Math.round(a / 100) / 10).replace('.', ',') + '\u00a0mil\u00a0€';
+    return s + String(Math.round(a / 1e5) / 10).replace('.', ',') + '\u00a0M\u00a0€';
+  }
+  return { parseMoney, fmtEUR, toInput, validISO, todayISO, isoToPt, fmtEixo };
 })();
 if (typeof module !== 'undefined') module.exports = Util;

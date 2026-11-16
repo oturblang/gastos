@@ -2,10 +2,13 @@
 /* Cálculos puros (sem interface). Tudo é recalculado a partir dos movimentos guardados. Valores em cêntimos. */
 const Calc = (() => {
   const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  const MESES_LONGOS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
   const TIPOS = ['ganho', 'gasto', 'investimento', 'ajuste'];
   const addDays = (iso, n) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
   const diasEntre = (a, b) => Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 864e5);
   const diaSemana = iso => DIAS[new Date(iso + 'T00:00:00Z').getUTCDay()];
+  const isoPt = k => k.slice(8, 10) + '/' + k.slice(5, 7) + '/' + k.slice(0, 4);
   /** Variação da poupança causada por um movimento (ganhos e ajustes somam; gastos e investimentos subtraem). */
   const efeito = m => (m.type === 'ganho' || m.type === 'ajuste') ? m.cents : -m.cents;
 
@@ -41,6 +44,96 @@ const Calc = (() => {
     for (const m of movs) if (m.type === 'gasto' && m.date <= iso && m.date.slice(0, 7) === iso.slice(0, 7)) t += m.cents;
     return t;
   }
-  return { TIPOS, addDays, diasEntre, diaSemana, efeito, serie, total, gastosMes };
+
+  // ---------- Períodos para os gráficos (dia, semana, mês, ano) ----------
+  const CONTAGEM = { dia: 14, semana: 8, mes: 12, ano: 5 };
+  const inicioSemana = iso => addDays(iso, -((new Date(iso + 'T00:00:00Z').getUTCDay() + 6) % 7));   // semanas começam à segunda
+  function chave(iso, modo) {
+    return modo === 'dia' ? iso : modo === 'semana' ? inicioSemana(iso) : modo === 'mes' ? iso.slice(0, 7) : iso.slice(0, 4);
+  }
+  const inicioDe = (k, modo) => modo === 'mes' ? k + '-01' : modo === 'ano' ? k + '-01-01' : k;
+  function fimDe(k, modo) {
+    if (modo === 'dia') return k;
+    if (modo === 'semana') return addDays(k, 6);
+    if (modo === 'mes') { const [y, m] = k.split('-').map(Number); return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10); }
+    return k + '-12-31';
+  }
+  function anterior(k, modo, n) {
+    if (modo === 'dia') return addDays(k, -n);
+    if (modo === 'semana') return addDays(k, -7 * n);
+    if (modo === 'mes') { const [y, m] = k.split('-').map(Number), t = y * 12 + (m - 1) - n; return Math.floor(t / 12) + '-' + String(t % 12 + 1).padStart(2, '0'); }
+    return String(Number(k) - n);
+  }
+  /** Chaves dos períodos que terminam no período de `hoje`, do mais antigo para o mais recente. */
+  function janela(modo, hoje) {
+    const fim = chave(hoje, modo), keys = [];
+    for (let i = CONTAGEM[modo] - 1; i >= 0; i--) keys.push(anterior(fim, modo, i));
+    return keys;
+  }
+  function rotulo(k, modo) {
+    if (modo === 'dia' || modo === 'semana') return k.slice(8, 10) + '/' + k.slice(5, 7);
+    if (modo === 'mes') return MESES[Number(k.slice(5, 7)) - 1] + ' ' + k.slice(2, 4);
+    return k;
+  }
+  function titulo(k, modo) {
+    if (modo === 'dia') return diaSemana(k) + ', ' + isoPt(k);
+    if (modo === 'semana') return 'Semana de ' + isoPt(k);
+    if (modo === 'mes') return MESES_LONGOS[Number(k.slice(5, 7)) - 1] + ' de ' + k.slice(0, 4);
+    return k;
+  }
+  /** Totais de ganhos, gastos e investimentos por período. */
+  function agrupar(movs, modo, keys) {
+    const idx = {}; keys.forEach((k, i) => { idx[k] = i; });
+    const out = keys.map(k => ({ key: k, ganho: 0, gasto: 0, investimento: 0, ajuste: 0 }));
+    for (const m of movs) { const i = idx[chave(m.date, modo)]; if (i !== undefined) out[i][m.type] += m.cents; }
+    return out;
+  }
+  /** Poupança e capital investido no fim de cada período (o período em curso conta até hoje). */
+  function evolucao(s, movs, modo, keys, hoje) {
+    return keys.map(k => { const fim = fimDe(k, modo); return { key: k, ...total(s, movs, fim > hoje ? hoje : fim) }; });
+  }
+  const somaTipo = (movs, tipo, de, ate) => movs.reduce((t, m) => t + (m.type === tipo && m.date >= de && m.date <= ate ? m.cents : 0), 0);
+  function gastosPorCategoria(movs, de, ate) {
+    const mapa = new Map();
+    for (const m of movs) if (m.type === 'gasto' && m.date >= de && m.date <= ate) mapa.set(m.categoryId == null ? null : m.categoryId, (mapa.get(m.categoryId == null ? null : m.categoryId) || 0) + m.cents);
+    return mapa;
+  }
+  function diasComInvestimento(movs, de, ate) {
+    const s = new Set();
+    for (const m of movs) if (m.type === 'investimento' && m.date >= de && m.date <= ate) s.add(m.date);
+    return s.size;
+  }
+  // ---------- Recorrentes semanais, histórico e metas ----------
+  const SEMANA_PL = ['domingos', 'segundas-feiras', 'terças-feiras', 'quartas-feiras', 'quintas-feiras', 'sextas-feiras', 'sábados'];
+  const textoSemana = w => (w === 0 || w === 6 ? 'Todos os ' : 'Todas as ') + SEMANA_PL[w];
+  const maxIso = (a, b) => a > b ? a : b;
+  /** Datas por gerar de uma regra semanal: depois de `lastGen` (ou desde o início), até `ate` e até à data de fim. */
+  function ocorrencias(r, ate) {
+    const de = r.lastGen ? maxIso(r.startDate, addDays(r.lastGen, 1)) : r.startDate;
+    const fim = r.endDate && r.endDate < ate ? r.endDate : ate, out = [];
+    if (de > fim) return out;
+    const w = new Date(de + 'T00:00:00Z').getUTCDay();
+    for (let d = addDays(de, (r.weekday - w + 7) % 7); d <= fim; d = addDays(d, 7)) out.push(d);
+    return out;
+  }
+  /** Próxima data (a partir de hoje) em que a regra investe, ou null se estiver pausada ou terminada. */
+  function proxima(r, hoje) {
+    if (!r.active) return null;
+    const de = maxIso(r.startDate, hoje), w = new Date(de + 'T00:00:00Z').getUTCDay(), d = addDays(de, (r.weekday - w + 7) % 7);
+    return r.endDate && d > r.endDate ? null : d;
+  }
+  /** Movimentos por ordem cronológica, cada um com o saldo da poupança logo depois dele. */
+  function historico(s, movs) {
+    const ord = [...movs].sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : a.id - b.id);
+    let p = s.initialSavings || 0;
+    return ord.map(m => { p += efeito(m); return { m, saldo: p }; });
+  }
+  /** Progresso de uma meta: percentagem real, barra limitada a 100 % e quanto falta. */
+  function progresso(atual, alvo) {
+    const pct = alvo > 0 ? Math.max(0, atual) / alvo * 100 : 0;
+    return { pct, barra: Math.min(100, pct), faltam: Math.max(0, alvo - atual), atingida: atual >= alvo };
+  }
+  return { textoSemana, ocorrencias, proxima, historico, progresso, TIPOS, addDays, diasEntre, diaSemana, efeito, serie, total, gastosMes, CONTAGEM, chave, inicioDe, fimDe, anterior, janela,
+    rotulo, titulo, agrupar, evolucao, somaTipo, gastosPorCategoria, diasComInvestimento };
 })();
 if (typeof module !== 'undefined') module.exports = Calc;

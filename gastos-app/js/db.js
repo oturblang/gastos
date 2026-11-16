@@ -2,10 +2,16 @@
 /* Armazenamento local (IndexedDB) e backup. Só guarda movimentos, descrições dos dias, categorias e valores iniciais. */
 const DB = (() => {
   const NOME = 'gastos-app', VERSAO_DB = 2;
-  const FORMATO = 'gastos-app-backup', VERSAO_BACKUP = 2;
+  const FORMATO = 'gastos-app-backup', VERSAO_BACKUP = 3;
   const LISTAS = ['movements', 'categories', 'recurrences', 'periods', 'goals'];   // registos com id automático
   const STORES = ['settings', 'days'].concat(LISTAS);                              // 'days' usa a data como chave
   let aberta = null;
+
+  const ouv = { bloqueado: null, libertado: null, novaVersao: null };
+  /** Avisos para a interface: outra janela com versão antiga bloqueia a atualização da base de dados. */
+  const aoBloquear = f => { ouv.bloqueado = f; };
+  const aoLibertar = f => { ouv.libertado = f; };
+  const aoNovaVersao = f => { ouv.novaVersao = f; };
 
   function abrir() {
     if (!aberta) aberta = new Promise((ok, erro) => {
@@ -16,8 +22,16 @@ const DB = (() => {
         if (!tem('days')) d.createObjectStore('days', { keyPath: 'date' });
         LISTAS.forEach(s => { if (!tem(s)) d.createObjectStore(s, { keyPath: 'id', autoIncrement: true }); });
       };
-      r.onsuccess = () => ok(r.result);
-      r.onerror = () => erro(r.error);
+      // Outra janela (por exemplo a app instalada, com a versão antiga) ainda usa a base de dados: avisa em vez de ficar parado.
+      r.onblocked = () => { if (ouv.bloqueado) ouv.bloqueado(); };
+      r.onsuccess = () => {
+        const d = r.result;
+        // Se outra janela precisar de atualizar a base de dados, esta larga-a para não a bloquear.
+        d.onversionchange = () => { d.close(); aberta = null; if (ouv.novaVersao) ouv.novaVersao(); };
+        if (ouv.libertado) ouv.libertado();
+        ok(d);
+      };
+      r.onerror = () => { aberta = null; erro(r.error); };
     });
     return aberta;
   }
@@ -58,6 +72,11 @@ const DB = (() => {
     }
     if (d.movements.some(m => !Util.validISO(m.date) || !['ganho', 'gasto', 'investimento', 'ajuste'].includes(m.type) || !Number.isSafeInteger(m.cents)))
       return falha('Há movimentos inválidos no backup.');
+    if (d.recurrences.some(r => !Number.isSafeInteger(r.cents) || r.cents <= 0 || !Number.isInteger(r.weekday) || r.weekday < 0 || r.weekday > 6 ||
+        !Util.validISO(r.startDate) || (r.endDate != null && !Util.validISO(r.endDate)) || typeof r.active !== 'boolean'))
+      return falha('Há investimentos recorrentes inválidos no backup.');
+    if (d.goals.some(g => !['poupanca', 'investimento'].includes(g.kind) || !Number.isSafeInteger(g.targetCents) || g.targetCents <= 0 || (g.date != null && !Util.validISO(g.date))))
+      return falha('Há metas inválidas no backup.');
     if (d.days === undefined) d.days = [];
     if (!Array.isArray(d.days) || d.days.some(x => !x || !Util.validISO(x.date) || typeof x.text !== 'string')) return falha('As descrições dos dias no backup são inválidas.');
     return { ok: true, resumo: { settings: s, movimentos: d.movements.length, dias: d.days.length, categorias: d.categories.length,
@@ -86,5 +105,57 @@ const DB = (() => {
       t.onerror = t.onabort = () => erro(t.error);
     });
   }
-  return { getSettings, setSettings, all, put, del, exportAll, validate, importAll, clearAll };
+  /** Cria os investimentos das regras semanais ativas que ainda faltam, até `hoje`. Tudo numa só transação:
+      se duas janelas abrirem ao mesmo tempo, nunca há duplicados. Devolve quantos criou. */
+  async function gerarRecorrentes(hoje) {
+    const db = await abrir();
+    return new Promise((ok, erro) => {
+      const t = db.transaction(['recurrences', 'movements'], 'readwrite'); let criados = 0;
+      const rq = t.objectStore('recurrences').getAll();
+      rq.onsuccess = () => {
+        const mq = t.objectStore('movements').getAll();
+        mq.onsuccess = () => {
+          const tem = new Set(mq.result.filter(m => m.recId != null).map(m => m.recId + '|' + m.date));
+          for (const r of rq.result) {
+            if (!r.active) continue;   // pausada: não avança
+            for (const dt of Calc.ocorrencias(r, hoje)) {
+              if (tem.has(r.id + '|' + dt)) continue;
+              t.objectStore('movements').put({ date: dt, type: 'investimento', cents: r.cents, categoryId: null, desc: r.note || 'Investimento recorrente', recId: r.id });
+              tem.add(r.id + '|' + dt); criados++;
+            }
+            const ate = r.endDate && r.endDate < hoje ? r.endDate : hoje;
+            if (r.lastGen !== ate) t.objectStore('recurrences').put({ ...r, lastGen: ate });
+          }
+        };
+      };
+      t.oncomplete = () => ok(criados);
+      t.onerror = t.onabort = () => erro(t.error || new Error('Operação cancelada.'));
+    });
+  }
+  /** Apaga uma categoria; os movimentos que a usavam ficam «Sem categoria». Devolve os ids afetados (para desfazer). */
+  async function apagarCategoria(id) {
+    const db = await abrir();
+    return new Promise((ok, erro) => {
+      const t = db.transaction(['categories', 'movements'], 'readwrite'), afetados = [];
+      const mq = t.objectStore('movements').getAll();
+      mq.onsuccess = () => {
+        mq.result.forEach(m => { if (m.categoryId === id) { afetados.push(m.id); t.objectStore('movements').put({ ...m, categoryId: null }); } });
+        t.objectStore('categories').delete(id);
+      };
+      t.oncomplete = () => ok(afetados);
+      t.onerror = t.onabort = () => erro(t.error || new Error('Operação cancelada.'));
+    });
+  }
+  async function restaurarCategoria(cat, ids) {
+    const db = await abrir();
+    return new Promise((ok, erro) => {
+      const t = db.transaction(['categories', 'movements'], 'readwrite');
+      t.objectStore('categories').put(cat);
+      const mq = t.objectStore('movements').getAll();
+      mq.onsuccess = () => mq.result.forEach(m => { if (ids.includes(m.id)) t.objectStore('movements').put({ ...m, categoryId: cat.id }); });
+      t.oncomplete = () => ok();
+      t.onerror = t.onabort = () => erro(t.error || new Error('Operação cancelada.'));
+    });
+  }
+  return { gerarRecorrentes, apagarCategoria, restaurarCategoria, getSettings, setSettings, all, put, del, exportAll, validate, importAll, clearAll, aoBloquear, aoLibertar, aoNovaVersao };
 })();
