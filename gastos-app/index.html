@@ -5,13 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gastos</title>
 <meta name="theme-color" content="#0f5c6e">
-<script>try{var t=localStorage.getItem("gastos-tema");if(t==="claro"||t==="escuro")document.documentElement.setAttribute("data-tema",t)}catch(e){}</script>
+<script>try{if(localStorage.getItem("gastos-lock"))document.documentElement.classList.add("bloqueado")}catch(e){}try{var t=localStorage.getItem("gastos-tema");if(t==="claro"||t==="escuro")document.documentElement.setAttribute("data-tema",t)}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<div id="lock" hidden role="dialog" aria-modal="true" aria-labelledby="lkTitulo">
+  <div class="lk-caixa">
+    <h1 id="lkTitulo">Gastos</h1>
+    <form id="lkForm" novalidate>
+      <p id="lkTxt">Escreve o código para abrir.</p>
+      <label for="lkCod" class="sr">Código</label>
+      <input id="lkCod" type="password" autocomplete="off" inputmode="numeric">
+      <p class="erro" id="lkErro" role="alert"></p>
+      <button class="primario" id="lkOk" type="submit">Desbloquear</button>
+      <button type="button" id="lkBio" hidden>Usar impressão digital / rosto</button>
+      <button type="button" id="lkEsqueciB" class="link">Esqueci-me do código</button>
+      <div id="lkEsqueci" hidden>
+        <p>Não há forma de recuperar o código. Podes apagar os dados deste aparelho e importar depois o último backup (por isso é importante fazê-los).</p>
+        <button type="button" id="lkApagar" class="perigo">Apagar tudo e recomeçar</button>
+      </div>
+    </form>
+  </div>
+</div>
 <header><h1>Gastos</h1><p id="off" hidden></p></header>
 <nav aria-label="Secções">
   <button type="button" data-v="Inicio"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span>Início</span></button>
@@ -81,6 +99,42 @@
         <button type="button" data-t="auto" aria-pressed="true">Automático</button>
       </div>
     </details>
+    <details class="caixa" id="dSegur">
+      <summary>Segurança</summary>
+      <p id="sgEstado" role="status">Bloqueio desligado.</p>
+      <p class="mut">O bloqueio esconde a app a quem pegar no teu telemóvel. Não cifra os dados guardados.</p>
+      <p id="sgTipoTxt" class="mut">Escolhe o tipo de código:</p>
+      <div id="sgTipo" class="seg" role="group" aria-label="Tipo de código">
+        <button type="button" data-t="pin" aria-pressed="true">PIN (números)</button>
+        <button type="button" data-t="senha" aria-pressed="false">Palavra-passe</button>
+      </div>
+      <button id="sgAtivar" type="button" class="primario">Ativar bloqueio</button>
+      <div id="sgOn" hidden>
+        <label for="sgAuto">Bloquear automaticamente</label>
+        <select id="sgAuto">
+          <option value="0">Sempre que sair da app</option>
+          <option value="1">Depois de 1 minuto fora</option>
+          <option value="5">Depois de 5 minutos fora</option>
+          <option value="15">Depois de 15 minutos fora</option>
+          <option value="-1">Só quando abro a app de novo</option>
+        </select>
+        <button id="sgAgora" type="button">Bloquear agora</button>
+        <button id="sgMudar" type="button">Mudar código</button>
+        <button id="sgBio" type="button">Ligar impressão digital / rosto</button>
+        <p id="sgBioNota" class="mut"></p>
+        <button id="sgDesativar" type="button" class="perigo">Desativar bloqueio</button>
+      </div>
+      <details class="ajuda">
+        <summary>Como funciona e se me esquecer do código</summary>
+        <ul>
+          <li>O código fica só neste aparelho (e não vai para o backup). Em cada aparelho configuras o teu.</li>
+          <li>Depois de 5 erros seguidos a app pede para esperar, e a espera aumenta.</li>
+          <li>Impressão digital e rosto usam o desbloqueio do próprio telemóvel. Se falharem, usas o código.</li>
+          <li>Se te esqueceres do código não há recuperação: no ecrã de bloqueio, «Esqueci-me do código» apaga os dados deste aparelho e depois importas o último backup.</li>
+          <li>Para proteger também o <strong>ficheiro</strong> de backup, usa «Exportar backup protegido» (em Backup).</li>
+        </ul>
+      </details>
+    </details>
     <div id="slotIniciaisDef"></div>
     <details id="dIniciais" class="caixa" open>
       <summary>Valores iniciais</summary>
@@ -121,6 +175,8 @@
           <li>Faz também um <strong>antes de apagar tudo</strong>, antes de importar outro backup e antes de trocar de telemóvel.</li>
           <li>A app avisa-te aqui no Início quando passam X dias desde o último. Podes escolher o X mais abaixo (por defeito, 14).</li>
         </ul>
+        <h4>Backup protegido por palavra-passe</h4>
+        <p>«Exportar backup protegido» cifra o ficheiro com uma palavra-passe que escolhes. Sem ela ninguém o abre, nem tu: <strong>se a perderes, o backup não se recupera</strong>. Para importar, a app pede a palavra-passe. Recomendo-o se vais guardar o ficheiro em email ou nuvem.</p>
         <h4>Onde guardar o ficheiro</h4>
         <p>Fora do aparelho onde usas a app: por exemplo, enviar para o teu email ou guardar no teu serviço de nuvem (Google Drive, iCloud, OneDrive) ou no computador. Se o ficheiro ficar só no telemóvel, perdes tudo junto. O ficheiro tem os teus dados financeiros: guarda-o num sítio só teu.</p>
         <h4>Passar os dados do telemóvel para o computador (ou ao contrário)</h4>
@@ -134,6 +190,7 @@
       </details>
       <p id="ultimo"></p>
       <button id="bExp" type="button" class="primario">Exportar backup (JSON)</button>
+      <button id="bExpP" type="button">Exportar backup protegido</button>
       <button id="bImp" type="button">Importar backup</button>
       <input id="fImp" type="file" accept="application/json,.json" hidden>
       <form id="fDias" novalidate>
@@ -212,6 +269,19 @@
 <button id="fab" type="button" class="primario" hidden>+ Registar</button>
 <div id="toast" role="status" aria-live="polite" hidden></div>
 <div id="tip" role="presentation" hidden></div>
+
+<dialog id="dSeg">
+  <form id="fSeg" novalidate>
+    <h3 id="sgTitulo"></h3>
+    <p id="sgTexto"></p>
+    <label for="sgA" id="sgLA">Código</label>
+    <input id="sgA" type="password" autocomplete="off">
+    <label for="sgB" id="sgLB">Repete</label>
+    <input id="sgB" type="password" autocomplete="off">
+    <p class="erro" id="sgErro" role="alert"></p>
+    <div class="linha"><button type="button" id="sgCancel">Cancelar</button><button type="submit" id="sgOk" class="primario">Guardar</button></div>
+  </form>
+</dialog>
 
 <dialog id="dlg">
   <form method="dialog">
@@ -310,6 +380,7 @@
 <script src="js/csv.js"></script>
 <script src="js/db.js"></script>
 <script src="js/app.js"></script>
+<script src="js/seg.js"></script>
 <script src="js/metas.js"></script>
 <script src="js/graficos.js"></script>
 <script src="js/demo.js"></script>

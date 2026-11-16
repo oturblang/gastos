@@ -176,17 +176,26 @@ const App = (() => {
     catch (err) { dizer('Não foi possível guardar: ' + err.message, false); }
   });
 
-  $('bExp').addEventListener('click', async () => {
+  async function exportar(senha) {
     try {
       E.settings.lastBackup = new Date().toISOString(); await guardar();
       const dados = await DB.exportAll();
+      const texto = senha ? JSON.stringify(await Seg.cifrar(dados, senha)) : JSON.stringify(dados, null, 2);
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' }));
-      a.download = 'backup-gastos-' + Util.todayISO() + '.json';
+      a.href = URL.createObjectURL(new Blob([texto], { type: 'application/json' }));
+      a.download = (senha ? 'backup-gastos-protegido-' : 'backup-gastos-') + Util.todayISO() + '.json';
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-      atualizar(); dizer('Backup exportado. Guarda o ficheiro num local seguro.');
+      atualizar(); dizer(senha ? 'Backup protegido exportado. Guarda também a palavra-passe: sem ela não o consegues abrir.' : 'Backup exportado. Guarda o ficheiro num local seguro.');
     } catch (err) { dizer('Não foi possível exportar: ' + err.message, false); }
+  }
+  $('bExp').addEventListener('click', () => exportar(null));
+  $('bExpP').addEventListener('click', async () => {
+    if (!Seg.temCripto) return dizer('Este navegador não permite cifrar (precisa de ligação segura).', false);
+    const senha = await Seg.pedir({ titulo: 'Backup protegido', rotulo: 'Exportar', tipo: 'senha', confirmar: true,
+      texto: 'Escolhe uma palavra-passe (mínimo 6 caracteres). Sem ela não consegues abrir o ficheiro e ninguém a consegue recuperar. Escreve-a duas vezes.',
+      validar: s => s.length >= 6 ? '' : 'Usa pelo menos 6 caracteres.' });
+    if (senha) exportar(senha);
   });
   function descarregar(nome, conteudo) {
     const a = document.createElement('a');
@@ -207,6 +216,7 @@ const App = (() => {
     if (!f) return;
     let dados;
     try { dados = JSON.parse(await f.text()); } catch { return dizer('O ficheiro não é um JSON válido.', false); }
+    if (dados && dados.format === Seg.FORMATO) { dados = await Seg.abrirCifrado(dados); if (!dados) return dizer('Importação cancelada.'); }
     const v = DB.validate(dados);
     if (!v.ok) return dizer(v.erro, false);
     const r = v.resumo;

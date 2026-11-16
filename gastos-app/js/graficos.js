@@ -163,11 +163,30 @@ const Graficos = (() => {
     };
     const alvo = e => e.target && e.target.closest ? e.target.closest('[data-tip]') : null;
     const mostrar = (a, e) => { tip.textContent = a.dataset.tip; tip.hidden = false; pos(e.clientX, e.clientY); };
-    document.addEventListener('pointerover', e => { const a = alvo(e); if (a) mostrar(a, e); });
-    document.addEventListener('pointermove', e => { if (!tip.hidden) pos(e.clientX, e.clientY); });
-    document.addEventListener('pointerout', e => { const a = alvo(e); if (a && !(e.relatedTarget && a.contains(e.relatedTarget))) tip.hidden = true; });
-    document.addEventListener('pointerdown', e => { const a = alvo(e); if (a) mostrar(a, e); else tip.hidden = true; });
-    document.addEventListener('scroll', () => { tip.hidden = true; }, true);
+    // Rato: a informação segue o cursor. Toque: um toque FIXA a informação e marca o dia; fica até tocares noutro sítio
+    // (tocar no mesmo dia outra vez fecha). Deslizar o gráfico não a fecha: acompanha o dia escolhido.
+    let fixo = null, off = { x: 0, y: 0 }, tipo = 'mouse';
+    const limpar = () => { if (fixo) { fixo.classList.remove('sel'); fixo = null; } tip.hidden = true; };
+    document.addEventListener('pointerdown', e => { tipo = e.pointerType || 'mouse'; });
+    document.addEventListener('pointerover', e => { if (tipo !== 'mouse' || fixo) return; const a = alvo(e); if (a) mostrar(a, e); });
+    document.addEventListener('pointermove', e => { if (tipo === 'mouse' && !fixo && !tip.hidden) pos(e.clientX, e.clientY); });
+    document.addEventListener('pointerout', e => { if (tipo !== 'mouse' || fixo) return; const a = alvo(e); if (a && !(e.relatedTarget && a.contains(e.relatedTarget))) tip.hidden = true; });
+    document.addEventListener('click', e => {
+      if (tipo === 'mouse') return;
+      const a = alvo(e);
+      if (!a || a === fixo) { limpar(); return; }
+      limpar(); fixo = a; a.classList.add('sel');
+      const r = a.getBoundingClientRect(); off = { x: e.clientX - r.left, y: e.clientY - r.top };
+      mostrar(a, e);
+    });
+    document.addEventListener('scroll', () => {
+      if (!fixo) { tip.hidden = true; return; }
+      if (!fixo.isConnected) { limpar(); return; }
+      const r = fixo.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) limpar(); else pos(r.left + off.x, r.top + off.y);
+    }, true);
+    document.addEventListener('vista', limpar);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') limpar(); });
   }
   return { COR, FATIAS, OUTRAS, barras, barrasGen, linha, circulo, iniciarTip };
 })();

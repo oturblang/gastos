@@ -153,3 +153,22 @@ details.opcoes[open]{flex-basis:100%;order:3}
 dialog{background:var(--card)}
 a{color:var(--ac)}
 ::placeholder{color:var(--mut);opacity:.8}
+
+/* Gráficos: tocar não seleciona texto nem faz zoom; o dia tocado fica marcado */
+svg{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+svg .hit.sel{fill:rgba(92,150,170,.22)}svg .pt.sel .cruz{opacity:1}
+svg path.sel{stroke:var(--tx);stroke-width:2}
+
+/* Passo 3: bloqueio */
+#lock{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
+#lock[hidden]{display:none}
+#lock.capa .lk-caixa{visibility:hidden}
+.lk-caixa{width:100%;max-width:340px;text-align:center}
+.lk-caixa h1{font-size:1.8rem;margin:0 0 12px;color:var(--ac)}
+.lk-caixa input{text-align:center;font-size:1.4rem;letter-spacing:.2em}
+.lk-caixa button{width:100%;margin:10px 0 0}
+button.link{border:0;background:none;min-height:44px;text-decoration:underline;font-weight:500}
+html.bloqueado header,html.bloqueado nav,html.bloqueado main,html.bloqueado #fab,html.bloqueado #toast{display:none!important}
+#sgOn button,#sgAtivar{margin-top:10px}
+
+[hidden]{display:none!important}

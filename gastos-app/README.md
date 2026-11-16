@@ -49,3 +49,7 @@ Barra no fundo com 5 itens: Início, Tabela, Gráficos, Carteira (Poupança e In
 
 ## Tema (versão 8)
 Mais → Definições → Aspeto: Claro, Escuro ou Automático (segue o telemóvel). A escolha fica só neste aparelho e não entra no backup.
+
+## Segurança (versão 9)
+Mais → Definições → Segurança: bloqueio com PIN (4–8 números) ou palavra-passe, desbloqueio opcional com impressão digital/rosto (do próprio telemóvel) e bloqueio automático. É um fecho de ecrã: não cifra os dados guardados. A configuração fica só neste aparelho e não entra no backup. Em Backup há «Exportar backup protegido» (AES-GCM, palavra-passe com PBKDF2); a importação reconhece-o e pede a palavra-passe.
+Gráficos: em ecrãs de toque, tocar num dia fixa a informação até tocares noutro sítio.
