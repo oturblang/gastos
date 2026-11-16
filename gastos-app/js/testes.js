@@ -169,6 +169,12 @@ const Testes = (() => {
     T('período (viagem) limita às datas dele', ids({ per: '1' }), [2, 1]);
     T('intervalo de datas (inclui os dois extremos)', ids({ de: '2026-11-02', ate: '2026-11-03' }), [4, 3, 2]);
     T('filtros combinados', ids({ tipo: 'gasto', cat: '7', de: '2026-11-02' }), [3]);
+    G('Escala ajustada');
+    T('sem valores muito grandes: não corta', Calc.limiteEscala([1000, 1200, 1500, 2000, 1800]), null);
+    T('ordenado muito maior: corta no maior normal + 15 %', Calc.limiteEscala([98000, 1000, 1200, 1500, 2000]), 2300);
+    T('zeros não contam', Calc.limiteEscala([0, 0, 98000, 1000, 1200, 1500, 2000, 0]), 2300);
+    T('poucos valores: não corta', Calc.limiteEscala([98000, 500]), null);
+    T('tudo a zero: não corta', Calc.limiteEscala([0, 0, 0]), null);
     return res;
   }
   return { correr };

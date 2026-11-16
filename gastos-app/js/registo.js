@@ -8,6 +8,8 @@ const Registo = (() => {
   const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const catNome = id => { const c = E.cats.find(x => x.id === id); return c ? c.name + (c.archived ? ' (arquivada)' : '') : 'Sem categoria'; };
   const dataCurta = iso => Calc.diaSemana(iso) + ' ' + iso.slice(8) + '/' + iso.slice(5, 7);
+  const guardado = () => { try { return localStorage.getItem('gastos-tabela-modo') === 'lista' ? 'lista' : 'tabela'; } catch (e) { return 'tabela'; } };
+  let modoTab = guardado();
   let diaAtual = null, editId = null, assinatura = '', destaque = null, quickTipo = null;
 
   async function recarregar() { await App.carregar(); App.atualizar(); }
@@ -34,6 +36,8 @@ const Registo = (() => {
     $('tabVazia').hidden = cfg; $('tabConteudo').hidden = !cfg;
     if (!cfg) { assinatura = ''; $('tab').textContent = ''; return; }
     const { de, n } = intervalo(), cols = Calc.serie(E.settings, E.movs, de, n), hoje = Util.todayISO();
+    aplicarModo();
+    if (modoTab === 'lista') return desenharCartoes(cols, hoje);
     const sig = [de, n, hoje, destaque, cols.map(c => EDIT.map(k => c.n[k] > 1 ? 1 : 0).join('')).join('.')].join('|');
     if (sig === assinatura && $('tab').firstChild) return atualizarCelulas(cols);   // só muda os números: não perde o cursor
     reconstruir(cols, hoje); assinatura = sig;
@@ -69,6 +73,29 @@ const Registo = (() => {
     });
   }
   const forcar = () => { assinatura = ''; desenharTabela(); };
+  /** «Tabela | Lista»: a lista mostra um cartão por dia (mais recente primeiro); tocar abre o dia para editar. */
+  function aplicarModo() {
+    const lista = modoTab === 'lista';
+    $('tabWrap').hidden = lista; $('tabLista').hidden = !lista;
+    document.querySelectorAll('[data-tmodo]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tmodo === modoTab)));
+    $('tabAjuda').textContent = lista ? 'Toca num dia para ver e editar os movimentos.' : 'Escreve nos campos. O resto calcula-se. Enter passa para baixo.';
+  }
+  function desenharCartoes(cols, hoje) {
+    const sl = window.scrollY, L = [['ganho', 'Ganhos'], ['gasto', 'Gastos'], ['investimento', 'Investido'], ['ajuste', 'Ajustes']];
+    $('tabLista').innerHTML = [...cols].reverse().map(c => {
+      const linhas = L.filter(([k]) => c.n[k] > 0).map(([k, nome]) => '<dt>' + nome + '</dt><dd>' + Util.fmtEUR(c.v[k]) + '</dd>').join('');
+      const cl = ['dcard', c.date === hoje ? 'hoje' : '', c.date === destaque ? 'escolhido' : ''].filter(Boolean).join(' ');
+      return '<button type="button" class="' + cl + '" data-date="' + c.date + '" data-dia="' + c.date + '" aria-label="Dia ' + Util.isoToPt(c.date) + '. Abrir">' +
+        '<div class="dc-t"><span>' + dataCurta(c.date) + '</span><small>' + (c.date === hoje ? 'hoje' : c.date === destaque ? '◆ escolhido' : '') + '</small></div>' +
+        (linhas ? '<dl>' + linhas + '</dl>' : '<div class="dc-vazio">Sem movimentos</div>') +
+        '<div class="dc-p"><span>Poupança</span><span>' + Util.fmtEUR(c.poup) + '</span></div></button>';
+    }).join('');
+    window.scrollTo(0, sl);
+  }
+  function trocarModo(m) {
+    modoTab = m; try { localStorage.setItem('gastos-tabela-modo', m); } catch (e) { /* ignora */ }
+    assinatura = ''; desenharTabela(); setTimeout(focarHoje, 0);
+  }
   /** Editar uma célula: sem movimento cria um; com um movimento altera-o; vazio ou 0 apaga (com confirmação). */
   async function celula(inp) {
     const { date, tipo } = inp.dataset, c = Util.parseMoney(inp.value);
@@ -89,7 +116,7 @@ const Registo = (() => {
       await depoisDeGuardar('Guardado: ' + NOME[tipo] + ' ' + Util.fmtEUR(c) + ' em ' + Util.isoToPt(date) + '.');
     } catch (err) { App.dizer('Não foi possível guardar: ' + err.message, false); }
   }
-  function focarHoje() { const th = $('tab').querySelector('th.hoje'); if (th) th.scrollIntoView({ inline: 'center', block: 'nearest' }); }
+  function focarHoje() { const th = modoTab === 'lista' ? $('tabLista').querySelector('.hoje') : $('tab').querySelector('th.hoje'); if (th) th.scrollIntoView({ inline: 'center', block: 'center' }); }
   async function mudarIntervalo(lado) {
     const t = $('addN').value.trim(), n = Number(t);
     $('eAdd').textContent = '';
@@ -302,6 +329,8 @@ const Registo = (() => {
     document.addEventListener('vista', e => { if (e.detail === 'Tabela') setTimeout(focarHoje, 0); });
     $('tab').addEventListener('change', e => { if (e.target.matches('input[data-tipo]')) celula(e.target); });
     $('tab').addEventListener('click', e => { const b = e.target.closest('[data-dia]'); if (b) abrirDia(b.dataset.dia); });
+    $('tabLista').addEventListener('click', e => { const b = e.target.closest('[data-dia]'); if (b) abrirDia(b.dataset.dia); });
+    document.querySelectorAll('[data-tmodo]').forEach(b => b.addEventListener('click', () => trocarModo(b.dataset.tmodo)));
     $('tab').addEventListener('keydown', e => {   // Enter desce para a linha de baixo, como no Excel
       if (e.key !== 'Enter' || !e.target.matches('input[data-tipo]')) return;
       e.preventDefault();
@@ -339,11 +368,11 @@ const Registo = (() => {
     $('remFim').addEventListener('click', () => apagarDia(intervalo().ate));
     $('fIr').addEventListener('submit', e => {
       e.preventDefault();
-      const d = $('irData').value, th = Util.validISO(d) && $('tab').querySelector('th[data-date="' + d + '"]');
+      const d = $('irData').value, alvo = () => (modoTab === 'lista' ? $('tabLista') : $('tab')).querySelector((modoTab === 'lista' ? '.dcard' : 'th') + '[data-date="' + d + '"]'), th = Util.validISO(d) && alvo();
       if (!th) return App.dizer('Escolhe uma data que esteja na tabela. Usa «Adicionar dias» para criar mais colunas.', false);
       destaque = d; forcar();
-      const novo = $('tab').querySelector('th[data-date="' + d + '"]'); if (novo) novo.scrollIntoView({ inline: 'center', block: 'nearest' });
-      App.dizer('Dia ' + Util.isoToPt(d) + ' destacado a azul na tabela.');
+      const novo = alvo(); if (novo) novo.scrollIntoView({ inline: 'center', block: 'center' });
+      App.dizer('Dia ' + Util.isoToPt(d) + ' destacado a azul' + (modoTab === 'lista' ? '.' : ' na tabela.'));
     });
     $('addFim').addEventListener('click', () => mudarIntervalo('fim'));
     $('addIni').addEventListener('click', () => mudarIntervalo('inicio'));

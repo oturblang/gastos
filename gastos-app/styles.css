@@ -189,3 +189,16 @@ li.hrow{cursor:default}
 .chips button[aria-pressed=true]{background:var(--acbg);color:#fff}
 .parte{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,110px);gap:8px;margin:8px 4px 8px 0}.parte>*{min-width:0;width:100%;box-sizing:border-box}
 #rFalta{font-weight:600}
+
+.dcards{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+button.dcard{color:var(--tx);font-weight:400;display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;min-height:56px}
+button.dcard.hoje{border:3px solid var(--ac);padding:10px}
+button.dcard.escolhido{background:var(--soft);outline:2px dashed var(--ac)}
+.dcard .dc-t{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;margin-bottom:6px}
+.dcard .dc-t small{font-weight:600;color:var(--mut)}
+.dcard .dc-t{color:var(--tx)}
+.dcard dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:2px 12px}
+.dcard dt{color:var(--mut)}.dcard dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.dcard .dc-p{margin-top:6px;padding-top:6px;border-top:1px solid var(--ln);display:flex;justify-content:space-between;font-weight:600}
+.dcard .dc-vazio{color:var(--mut)}
+.seg-t{align-self:center;margin-right:8px;color:var(--mut);font-weight:600}

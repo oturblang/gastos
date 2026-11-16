@@ -158,6 +158,16 @@ const Calc = (() => {
     }
     return out.map(o => ({ key: o.key, n: o.n, dias: o.dias.size, semanas: o.semanas.size }));
   }
+  // ---------- Escala ajustada dos gráficos ----------
+  /** Regra da escala «Ajustada»: um valor é «muito grande» se for mais de 3 vezes a mediana (a mais baixa das duas do meio) dos valores não nulos.
+      Devolve o limite em que o eixo é cortado (o maior valor normal + 15 %), ou null se não há nada a cortar. */
+  function limiteEscala(valores) {
+    const nz = valores.filter(v => v > 0).sort((a, b) => a - b);
+    if (nz.length < 3) return null;
+    const med = nz[Math.floor((nz.length - 1) / 2)], normais = nz.filter(v => v <= 3 * med);
+    if (normais.length === nz.length) return null;
+    return Math.ceil(normais[normais.length - 1] * 1.15);
+  }
   // ---------- Pesquisa e filtros ----------
   const norm = t => String(t == null ? '' : t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   /** Filtra movimentos (mais recentes primeiro). f = { q, tipo, cat ('none' = sem categoria), per (id), de, ate }.
@@ -187,7 +197,7 @@ const Calc = (() => {
     return { dias, ganho, gasto, investimento, ajuste: somaTipo(movs, 'ajuste', p.start, p.end), sobra: ganho - gasto - investimento,
       mediaGasto: Math.round(gasto / dias), poupFim: total(s, movs, p.end).poup };
   }
-  return { filtrar, gerarRecorrentes, frequencia, diasDe, sobrepoe, conflito, periodoDe, resumoPeriodo, textoSemana, ocorrencias, proxima, historico, progresso, TIPOS, addDays, diasEntre, diaSemana, efeito, serie, total, gastosMes, CONTAGEM, chave, inicioDe, fimDe, anterior, janela,
+  return { limiteEscala, filtrar, gerarRecorrentes, frequencia, diasDe, sobrepoe, conflito, periodoDe, resumoPeriodo, textoSemana, ocorrencias, proxima, historico, progresso, TIPOS, addDays, diasEntre, diaSemana, efeito, serie, total, gastosMes, CONTAGEM, chave, inicioDe, fimDe, anterior, janela,
     rotulo, titulo, agrupar, evolucao, somaTipo, gastosPorCategoria, diasComInvestimento };
 })();
 if (typeof module !== 'undefined') module.exports = Calc;

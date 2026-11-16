@@ -27,11 +27,13 @@ const Graficos = (() => {
   }
 
   /** Barras agrupadas: ganhos, gastos e investimentos por período. O eixo vertical fica fixo; só as barras deslizam. */
-  function barras(el, itens, rotulos, titulos, resumo) {
+  function barras(el, itens, rotulos, titulos, resumo, ajustada) {
     const EIXO = 58, ML = 8, MR = 8, MT = 10, MB = 28, H = 230;
     const larg = Math.max(el.clientWidth || 320, 300) - EIXO;
     const n = itens.length, gw = Math.max(50, (larg - ML - MR) / n), W = Math.ceil(ML + MR + gw * n);
-    const max = Math.max(0, ...itens.map(i => Math.max(i.ganho, i.gasto, i.investimento)));
+    const real = Math.max(0, ...itens.map(i => Math.max(i.ganho, i.gasto, i.investimento)));
+    const corte = ajustada ? Calc.limiteEscala(itens.flatMap(i => [i.ganho, i.gasto, i.investimento])) : null;
+    const max = corte || real, cortou = !!corte && real > corte;
     const sc = escala(0, max), y = v => MT + (H - MT - MB) * (1 - (v - sc.min) / (sc.max - sc.min));
     const bw = Math.max(6, Math.min(20, Math.floor((gw - 14) / 3) - 2)), tipos = ['ganho', 'gasto', 'investimento'];
     let eixo = '<svg class="eixo" width="' + EIXO + '" height="' + H + '" viewBox="0 0 ' + EIXO + ' ' + H + '" aria-hidden="true">';
@@ -44,7 +46,12 @@ const Graficos = (() => {
     itens.forEach((it, i) => {
       const cx = ML + gw * (i + 0.5), x0 = cx - (3 * bw + 4) / 2;
       tipos.forEach((tp, k) => {
-        if (it[tp] > 0) s += '<path d="' + barraPath(x0 + k * (bw + 2), y(it[tp]), bw, y(0) - y(it[tp])) + '" fill="' + COR[tp] + '"/>';
+        const vv = Math.min(it[tp], sc.max), xx = x0 + k * (bw + 2);
+        if (it[tp] > 0) s += '<path d="' + barraPath(xx, y(vv), bw, y(0) - y(vv)) + '" fill="' + COR[tp] + '"/>';
+        if (it[tp] > sc.max) {   // barra cortada: dois traços na cor do fundo
+          const yc = y(sc.max) + 10;
+          s += '<path d="M' + pt(xx - 2) + ',' + pt(yc + 3) + 'L' + pt(xx + bw + 2) + ',' + pt(yc - 3) + 'M' + pt(xx - 2) + ',' + pt(yc + 8) + 'L' + pt(xx + bw + 2) + ',' + pt(yc + 2) + '" stroke="var(--surf)" stroke-width="2.5" fill="none"/>';
+        }
       });
       s += '<text class="tx" x="' + pt(cx) + '" y="' + (H - 8) + '" text-anchor="middle">' + esc(rotulos[i]) + '</text>';
       const tip = titulos[i] + '\nGanhos: ' + Util.fmtEUR(it.ganho) + '\nGastos: ' + Util.fmtEUR(it.gasto) + '\nInvestido: ' + Util.fmtEUR(it.investimento);
@@ -52,6 +59,7 @@ const Graficos = (() => {
     });
     el.innerHTML = '<div class="barras-wrap">' + eixo + '</svg><div class="barras-scroll">' + s + '</svg></div></div>';
     const rolar = el.querySelector('.barras-scroll'); rolar.scrollLeft = rolar.scrollWidth;   // mostra os períodos mais recentes
+    return { cortou };
   }
 
   /** Barras agrupadas genéricas (valores positivos ou negativos). series: [{k, cor, nome}]; unidade: 'eur' ou 'n' (contagens). */

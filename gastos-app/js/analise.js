@@ -11,6 +11,8 @@ const Analise = (() => {
   const UNI = { dia: 'dia', semana: 'semana', mes: 'mês', ano: 'ano' };
   const C = Graficos.COR, COR_DIAS = 'var(--c-poup)', COR_SEM = 'var(--c-sem)';
   let modo = 'dia';
+  const lerEsc = () => { try { return localStorage.getItem('gastos-escala') === 'ajustada'; } catch (e) { return false; } };
+  let ajustada = lerEsc();
 
   const legenda = itens => '<ul class="legenda">' + itens.map(([n, c]) => '<li><span class="sw" style="background:' + c + '"></span>' + n + '</li>').join('') + '</ul>';
   const tile = (r, v, x) => '<div class="tile"><dt>' + r + '</dt><dd class="v">' + v + '</dd>' + (x ? '<dd class="sub">' + x + '</dd>' : '') + '</div>';
@@ -49,7 +51,9 @@ const Analise = (() => {
     const sFreq = [{ k: 'n', cor: C.investimento, nome: 'Nº de investimentos' }];
     if (modo !== 'dia') sFreq.push({ k: 'dias', cor: COR_DIAS, nome: 'Dias com investimento' });
     if (modo === 'mes' || modo === 'ano') sFreq.push({ k: 'semanas', cor: COR_SEM, nome: 'Semanas com investimento' });
-    h += '<figure class="graf"><figcaption>Ganhos, gastos e investido</figcaption><div id="aBarras"></div>' + legenda([['Ganhos', C.ganho], ['Gastos', C.gasto], ['Investido', C.investimento]]) +
+    h += '<figure class="graf"><figcaption>Ganhos, gastos e investido</figcaption><div class="seg" role="group" aria-label="Escala das barras"><span class="seg-t">Escala:</span>' +
+      '<button type="button" data-esc="normal" aria-pressed="' + !ajustada + '">Normal</button><button type="button" data-esc="ajustada" aria-pressed="' + ajustada + '">Ajustada</button></div>' +
+      '<p class="mut peq-txt" id="aEscNota"></p><div id="aBarras"></div>' + legenda([['Ganhos', C.ganho], ['Gastos', C.gasto], ['Investido', C.investimento]]) +
       tabela(['Intervalo', 'Ganhos', 'Gastos', 'Investido'], g.map((x, i) => [tit[i], Util.fmtEUR(x.ganho), Util.fmtEUR(x.gasto), Util.fmtEUR(x.investimento)])) + '</figure>' +
       '<figure class="graf"><figcaption>Poupança no fim de cada ' + UNI[modo] + '</figcaption><div id="aPoup"></div>' +
       tabela(['Intervalo', 'Poupança', 'Capital investido'], ev.map((x, i) => [tit[i], Util.fmtEUR(x.poup), Util.fmtEUR(x.capital)])) + '</figure>' +
@@ -60,7 +64,8 @@ const Analise = (() => {
     v.innerHTML = h;
 
     const soma = t => Calc.somaTipo(movs, t, de, hoje);
-    Graficos.barras($('aBarras'), g, rot, tit, 'Barras por ' + UNI[modo] + ': ganhos ' + Util.fmtEUR(soma('ganho')) + ', gastos ' + Util.fmtEUR(soma('gasto')) + ' e investido ' + Util.fmtEUR(soma('investimento')) + ' no total.');
+    const rb = Graficos.barras($('aBarras'), g, rot, tit, 'Barras por ' + UNI[modo] + ': ganhos ' + Util.fmtEUR(soma('ganho')) + ', gastos ' + Util.fmtEUR(soma('gasto')) + ' e investido ' + Util.fmtEUR(soma('investimento')) + ' no total.', ajustada);
+    $('aEscNota').textContent = !ajustada ? 'Normal: o eixo vai até ao valor mais alto.' : rb.cortou ? 'Ajustada: barras com mais de 3 vezes o valor típico (a mediana) são cortadas, assinaladas com dois traços, para os valores pequenos se verem. Toca numa barra para ver o valor real.' : 'Ajustada: neste intervalo não há valores muito maiores que os outros, por isso a escala é igual à Normal.';
     Graficos.barrasGen($('aPoup'), ev, rot, tit, 'Poupança no fim de cada ' + UNI[modo] + ': de ' + Util.fmtEUR(ev[0].poup) + ' para ' + Util.fmtEUR(poupAtual) + '.', [{ k: 'poup', cor: C.poupanca, nome: 'Poupança' }], 'eur');
     { const u = ev[ev.length - 1]; Graficos.linha($('aLinha'), ev, rot, tit, 'Evolução: poupança de ' + Util.fmtEUR(u.poup) + ' e capital investido de ' + Util.fmtEUR(u.capital) + ' no fim do período.'); }
     Graficos.barrasGen($('aFreq'), fr, rot, tit, 'Frequência de investimento por ' + UNI[modo] + ': ' + fr.reduce((a, x) => a + x.n, 0) + ' investimentos no total.', sFreq, 'n');
@@ -75,7 +80,8 @@ const Analise = (() => {
     App.aoAtualizar(desenhar);
     document.addEventListener('vista', e => { if (e.detail === 'Graficos') desenhar(); });
     let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(desenhar, 150); });
-    $('vGraficos').addEventListener('click', e => { const b = e.target.closest('button[data-m]'); if (b) { modo = b.dataset.m; desenhar(); } });
+    $('vGraficos').addEventListener('click', e => { const b = e.target.closest('button[data-m]'); if (b) { modo = b.dataset.m; desenhar(); return; }
+      const s = e.target.closest('button[data-esc]'); if (s) { ajustada = s.dataset.esc === 'ajustada'; try { localStorage.setItem('gastos-escala', ajustada ? 'ajustada' : 'normal'); } catch (x) { /* ignora */ } desenhar(); } });
   }
   return { iniciar, desenhar };
 })();

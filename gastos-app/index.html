@@ -247,7 +247,10 @@
       <button type="button" id="irInicio" class="primario">Ir para o Início</button>
     </div>
     <div id="tabConteudo">
-      <p class="mut peq-txt">Escreve nos campos. O resto calcula-se. Enter passa para baixo.</p>
+      <div class="seg" role="group" aria-label="Forma de ver os dias">
+        <button type="button" data-tmodo="tabela" aria-pressed="true">Tabela</button><button type="button" data-tmodo="lista" aria-pressed="false">Lista</button>
+      </div>
+      <p class="mut peq-txt" id="tabAjuda">Escreve nos campos. O resto calcula-se. Enter passa para baixo.</p>
       <div class="barra topo">
         <button type="button" id="bHoje">Ir para hoje</button>
         <details class="opcoes" id="dOpc">
@@ -272,6 +275,7 @@
         </details>
       </div>
       <div class="tabwrap" id="tabWrap" tabindex="0" aria-label="Tabela de dias, desliza para os lados"><table id="tab"></table></div>
+      <div id="tabLista" class="dcards" hidden></div>
     </div>
   </div>
 

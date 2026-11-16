@@ -65,3 +65,7 @@ Início só com o resumo (sem gráficos); o gráfico «Poupança e capital inves
 ## Versão 12 (Fase 5 + divisão por categorias)
 - Registo: atalhos das 5 categorias mais usadas (últimos 90 dias), categoria do último movimento do mesmo tipo já escolhida, data de hoje, cursor no valor e Enter guarda. Nada novo é guardado: tudo vem dos movimentos.
 - «Dividir por várias categorias» (gastos e ganhos): reparte o total (ex.: 30 € Comida + 40 € Experiências). Cada parte fica como um movimento normal, ligado às outras por `grp`; totais, gráficos, filtros e backups funcionam sem mudanças. Cache `gastos-v12`.
+
+## Versão 13 (Fases 6 e 7)
+- **Escala dos gráficos**: nas barras «Ganhos, gastos e investido» há «Escala: Normal | Ajustada». Ajustada corta as barras com mais de 3 vezes a mediana dos valores (limite = maior valor normal + 15 %), com dois traços; o valor real aparece sempre ao tocar. Escolha guardada só neste aparelho (`gastos-escala`). Regra em `Calc.limiteEscala`.
+- **Tabela | Lista** no separador Tabela: um cartão por dia (mais recente primeiro), tocar abre o dia. Adicionar/remover dias e «Ir para uma data» funcionam nos dois modos. Escolha guardada só neste aparelho (`gastos-tabela-modo`). Cache `gastos-v13`.
