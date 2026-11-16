@@ -152,6 +152,23 @@ const Testes = (() => {
     const h = Csv.historico({ initialSavings: 100000, startDate: '2026-11-01' }, [mov(1, '2026-11-01', 'gasto', 1250)], cats).split('\r\n');
     T('histórico: saldo inicial e saldo depois', [h[1], h[2]], ['01/11/2026;Saldo inicial;;1000,00;;', '01/11/2026;Gasto;-12,50;987,50;;']);
     T('cêntimos para euros', [Csv.euros(5), Csv.euros(123456), Csv.euros(-100)], ['0,05', '1234,56', '-1,00']);
+    G('Pesquisa e filtros');
+    const fm = [mov(1, '2026-11-01', 'gasto', 1250, { categoryId: 7, desc: 'Café com amigos' }), mov(2, '2026-11-02', 'ganho', 98000, { desc: 'Ordenado' }), mov(3, '2026-11-03', 'gasto', 800, { categoryId: 7 }),
+      mov(4, '2026-11-03', 'investimento', 5000), mov(5, '2026-10-30', 'gasto', 400, { categoryId: 8, desc: 'cafe' })];
+    const fc = [{ id: 7, name: 'Comida' }, { id: 8, name: 'Transportes' }], fp = [{ id: 1, name: 'Viagem', start: '2026-11-01', end: '2026-11-02' }];
+    const ids = f => Calc.filtrar(fm, fc, fp, f).map(m => m.id);
+    T('sem filtros: todos, mais recentes primeiro (data e depois id)', ids({}), [4, 3, 2, 1, 5]);
+    T('texto sem acentos encontra «Café»', ids({ q: 'cafe' }), [1, 5]);
+    T('texto com acento encontra «cafe»', ids({ q: 'CAFÉ' }), [1, 5]);
+    T('várias palavras: todas têm de aparecer', ids({ q: 'cafe amigos' }), [1]);
+    T('texto procura também no nome da categoria', ids({ q: 'transp' }), [5]);
+    T('texto sem resultados', ids({ q: 'xyz' }), []);
+    T('tipo', ids({ tipo: 'gasto' }), [3, 1, 5]);
+    T('categoria', ids({ cat: '7' }), [3, 1]);
+    T('sem categoria', ids({ cat: 'none' }), [4, 2]);
+    T('período (viagem) limita às datas dele', ids({ per: '1' }), [2, 1]);
+    T('intervalo de datas (inclui os dois extremos)', ids({ de: '2026-11-02', ate: '2026-11-03' }), [4, 3, 2]);
+    T('filtros combinados', ids({ tipo: 'gasto', cat: '7', de: '2026-11-02' }), [3]);
     return res;
   }
   return { correr };

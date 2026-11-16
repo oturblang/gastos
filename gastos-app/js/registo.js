@@ -110,7 +110,7 @@ const Registo = (() => {
     const lista = movs.length ? '<ul class="movs">' + movs.map(m => '<li><span><strong>' + NOME[m.type] + '</strong> ' + Util.fmtEUR(m.cents) + '<br>' + esc(catNome(m.categoryId)) +
         (m.desc ? ' - ' + esc(m.desc) : '') + '</span><span><button type="button" data-ed="' + m.id + '">Editar</button><button type="button" class="perigo" data-ap="' + m.id + '">Apagar</button></span></li>').join('') + '</ul>'
         : '<p>Sem movimentos neste dia.</p>';
-    $('vDia').innerHTML = '<button type="button" id="dVoltar">Voltar à tabela</button><h2>' + Calc.diaSemana(d) + ', ' + Util.isoToPt(d) + '</h2>' +
+    $('vDia').innerHTML = '<button type="button" id="dVoltar">' + (origemDia === 'Movimentos' ? 'Voltar aos movimentos' : 'Voltar à tabela') + '</button><h2>' + Calc.diaSemana(d) + ', ' + Util.isoToPt(d) + '</h2>' +
       ((per => per ? '<p>Período: <button type="button" class="dia" data-per="' + per.id + '">' + esc(per.name) + '</button></p>' : '')(Calc.periodoDe(E.pers, d))) +
       '<h3>Movimentos</h3>' + lista + '<button type="button" id="dAdd" class="primario">+ Adicionar movimento</button>' +
       '<label for="dDesc">Descrição do dia</label><textarea id="dDesc" rows="2">' + esc(desc) + '</textarea>' +
@@ -129,7 +129,8 @@ const Registo = (() => {
     $('amTxt').textContent = Util.isoToPt(m.date) + [catNome(m.categoryId), m.desc].filter(Boolean).map(x => ' · ' + x).join('') + (m.recId != null ? ' · recorrente' : '');
     $('dMov').showModal();
   }
-  function abrirDia(d) { diaAtual = d; desenharDia(); App.ir('Dia'); }
+  let origemDia = 'Tabela';
+  function abrirDia(d, origem) { diaAtual = d; origemDia = origem || 'Tabela'; desenharDia(); App.ir('Dia', origemDia === 'Movimentos' ? 'Mais' : undefined); }
   async function guardarDesc() {
     try {
       const t = $('dDesc').value.trim();
@@ -164,7 +165,7 @@ const Registo = (() => {
       if (desc) await DB.del('days', d);
       if (sai) { E.settings = s2; await App.guardar(); }
       if (destaque === d) destaque = null;
-      await recarregar(); if (!$('vDia').hidden) App.ir('Tabela');
+      await recarregar(); if (!$('vDia').hidden) App.ir(origemDia);
       App.dizer(sai ? 'Coluna removida: ' + Util.isoToPt(d) + '.' : 'Dia apagado: ' + Util.isoToPt(d) + '.', true, { rotulo: 'Desfazer', fn: async () => {
         try {
           for (const m of movs) await DB.put('movements', m);
@@ -241,7 +242,7 @@ const Registo = (() => {
     });
     $('vDia').addEventListener('click', e => {
       const t = e.target;
-      if (t.id === 'dVoltar') App.ir('Tabela');
+      if (t.id === 'dVoltar') App.ir(origemDia, origemDia === 'Movimentos' ? undefined : undefined);
       else if (t.dataset.per) Per.abrir(Number(t.dataset.per));
       else if (t.id === 'dGuardar') guardarDesc();
       else if (t.id === 'dAdd') abrirReg({ date: diaAtual });
@@ -275,5 +276,5 @@ const Registo = (() => {
   }
   return { abrirDia, iniciar, focarHoje, rapido, acoes, editarMov: m => abrirReg({ mov: m }), apagarMov };
 })();
-Metas.iniciar(); Poup.iniciar(); Invest.iniciar(); Per.iniciar(); Analise.iniciar(); Calculos.iniciar(); Registo.iniciar();
+Metas.iniciar(); Mov.iniciar(); Poup.iniciar(); Invest.iniciar(); Per.iniciar(); Analise.iniciar(); Calculos.iniciar(); Registo.iniciar();
 App.iniciar();

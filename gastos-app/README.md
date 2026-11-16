@@ -56,3 +56,8 @@ Gráficos: em ecrãs de toque, tocar num dia fixa a informação até tocares no
 
 ## Versão 10 (fases 1 e 2)
 Início só com o resumo (sem gráficos); o gráfico «Poupança e capital investido» está agora em Gráficos. O botão «+» é pequeno e só aparece em Início, Tabela, Poupança e Investimentos. Página do dia: movimentos primeiro e descrição pequena. Histórico da Poupança e dos Investimentos em lista, sem scroll lateral: tocar num movimento abre Editar e Apagar.
+
+## Versão 11 (Fases 3 e 4)
+- **Partilhar backup**: botão em Definições → Backup e no aviso do Início. Pergunta se quer palavra-passe, abre a partilha do telemóvel (email, nuvem, WhatsApp) e, se o navegador não partilhar ficheiros, descarrega. A data do último backup só fica registada se a partilha for concluída.
+- **Movimentos** (Mais → Movimentos): pesquisa por texto (descrição e categoria, sem distinguir acentos), filtros por tipo, categoria, período, mês e datas, total do filtrado, 50 de cada vez com «Mostrar mais». Tocar num movimento abre o dia, com «Voltar aos movimentos».
+- Novo ficheiro `js/movimentos.js`; cache do service worker `gastos-v11`. Sem alterações à base de dados nem aos backups.

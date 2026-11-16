@@ -2,7 +2,7 @@
 /* Estado partilhado, navegação, mensagens, categorias, valores iniciais, backup e armazenamento. */
 const App = (() => {
   const $ = id => document.getElementById(id);
-  const VISTAS = ['Inicio', 'Tabela', 'Graficos', 'Poupanca', 'Invest', 'Calculos', 'Periodos', 'Periodo', 'Dia', 'Mais', 'Definicoes'];
+  const VISTAS = ['Inicio', 'Tabela', 'Graficos', 'Poupanca', 'Invest', 'Calculos', 'Periodos', 'Periodo', 'Dia', 'Mais', 'Definicoes', 'Movimentos'];
   const CATS_BASE = ['Comida', 'Transportes', 'Experiências', 'Saúde', 'Casa', 'Outros'];
   const padrao = () => ({ initialSavings: 0, initialInvested: 0, startDate: Util.todayISO(), backupReminderDays: 14,
     lastBackup: null, catsSeeded: false, configured: false, tableFrom: null, tableTo: null });
@@ -36,14 +36,14 @@ const App = (() => {
       d.showModal();
     });
   }
-  const NAV = { Dia: 'Tabela', Invest: 'Poupanca', Periodos: 'Mais', Periodo: 'Mais', Calculos: 'Mais', Definicoes: 'Mais' };
+  const NAV = { Dia: 'Tabela', Invest: 'Poupanca', Periodos: 'Mais', Periodo: 'Mais', Calculos: 'Mais', Definicoes: 'Mais', Movimentos: 'Mais' };
   /** Barra secundária por cima da vista: Poupança/Investimentos (Carteira) ou «‹ Mais». */
   function subBar(v) {
     const s = $('subBar');
     if (v === 'Poupanca' || v === 'Invest') {
       s.innerHTML = '<div class="seg" role="group" aria-label="Carteira"><button type="button" data-ir="Poupanca" aria-pressed="' + (v === 'Poupanca') + '">Poupança</button><button type="button" data-ir="Invest" aria-pressed="' + (v === 'Invest') + '">Investimentos</button></div>';
       s.hidden = false;
-    } else if (v === 'Periodos' || v === 'Calculos' || v === 'Definicoes') {
+    } else if (v === 'Periodos' || v === 'Calculos' || v === 'Definicoes' || v === 'Movimentos') {
       s.innerHTML = '<button type="button" class="voltar" data-ir="Mais">‹ Mais</button>'; s.hidden = false;
     } else { s.textContent = ''; s.hidden = true; }
   }
@@ -51,10 +51,10 @@ const App = (() => {
   const COM_FAB = ['Inicio', 'Tabela', 'Poupanca', 'Invest', 'Dia'];
   /** O botão «+» só aparece nos ecrãs onde faz sentido registar. */
   function fabVis() { $('fab').hidden = !(E.settings.configured && COM_FAB.includes(vistaAtual)); }
-  function ir(v) {
+  function ir(v, navSel) {
     vistaAtual = v;
     VISTAS.forEach(x => { $('v' + x).hidden = x !== v; });
-    const nav = NAV[v] || v;
+    const nav = navSel || NAV[v] || v;
     document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-current', b.dataset.v === nav ? 'page' : 'false'));
     subBar(v); fabVis();
     window.scrollTo(0, 0);
@@ -106,7 +106,7 @@ const App = (() => {
       }
     }
     const av = $('aviso'); av.textContent = txt; av.hidden = !txt;
-    if (txt) { const b = document.createElement('button'); b.type = 'button'; b.dataset.ir = 'Definicoes'; b.textContent = 'Fazer backup'; b.addEventListener('click', () => { $('ajudaBackup').closest('details.caixa').open = true; }); av.append(b); }
+    if (txt) { const b = document.createElement('button'); b.type = 'button'; b.textContent = 'Partilhar backup'; b.addEventListener('click', partilharBackup); av.append(b); }
     desenharCats();
   }
   function desenharCats() {
@@ -181,26 +181,77 @@ const App = (() => {
     catch (err) { dizer('Não foi possível guardar: ' + err.message, false); }
   });
 
-  async function exportar(senha) {
+  function guardarFicheiro(nome, texto, tipo) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([texto], { type: tipo }));
+    a.download = nome;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  /** Abre a partilha do telemóvel com o ficheiro. Devolve 'partilhado', 'cancelado' ou 'descarregado' (quando o navegador não partilha ficheiros). */
+  async function partilharFicheiro(nome, texto) {
+    if (navigator.share && navigator.canShare) {
+      for (const tipo of ['application/json', 'text/plain']) {
+        const f = new File([texto], nome, { type: tipo });
+        let pode = false; try { pode = navigator.canShare({ files: [f] }); } catch (e) { pode = false; }
+        if (!pode) continue;
+        try { await navigator.share({ files: [f], title: 'Backup Gastos', text: 'Backup da app Gastos' }); return 'partilhado'; }
+        catch (e) { if (e && e.name === 'AbortError') return 'cancelado'; }   // outro erro: tenta o formato seguinte e, no fim, descarrega
+      }
+    }
+    guardarFicheiro(nome, texto, 'application/json');
+    return 'descarregado';
+  }
+  /** Exporta o backup (cifrado se houver palavra-passe). `partilhar`: usa a partilha do telemóvel. A data do último backup só fica se tudo correr bem. */
+  async function exportar(senha, partilhar) {
+    const antiga = E.settings.lastBackup;
+    const desfazer = async () => { E.settings.lastBackup = antiga; await guardar(); atualizar(); };
     try {
       E.settings.lastBackup = new Date().toISOString(); await guardar();
       const dados = await DB.exportAll();
       const texto = senha ? JSON.stringify(await Seg.cifrar(dados, senha)) : JSON.stringify(dados, null, 2);
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([texto], { type: 'application/json' }));
-      a.download = (senha ? 'backup-gastos-protegido-' : 'backup-gastos-') + Util.todayISO() + '.json';
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-      atualizar(); dizer(senha ? 'Backup protegido exportado. Guarda também a palavra-passe: sem ela não o consegues abrir.' : 'Backup exportado. Guarda o ficheiro num local seguro.');
-    } catch (err) { dizer('Não foi possível exportar: ' + err.message, false); }
+      const nome = (senha ? 'backup-gastos-protegido-' : 'backup-gastos-') + Util.todayISO() + '.json';
+      const aviso = senha ? ' Guarda também a palavra-passe: sem ela não o consegues abrir.' : '';
+      if (partilhar) {
+        const r = await partilharFicheiro(nome, texto);
+        if (r === 'cancelado') { await desfazer(); return dizer('Partilha cancelada. O backup não ficou feito.'); }
+        atualizar();
+        return dizer(r === 'partilhado' ? 'Backup partilhado. Confirma que chegou ao destino (email, nuvem…).' + aviso
+          : 'Este navegador não partilha ficheiros: o backup foi descarregado. Guarda-o num local seguro.' + aviso);
+      }
+      guardarFicheiro(nome, texto, 'application/json');
+      atualizar(); dizer((senha ? 'Backup protegido exportado.' : 'Backup exportado. Guarda o ficheiro num local seguro.') + aviso);
+    } catch (err) { try { await desfazer(); } catch (e) { /* ignora */ } dizer('Não foi possível exportar: ' + err.message, false); }
   }
-  $('bExp').addEventListener('click', () => exportar(null));
-  $('bExpP').addEventListener('click', async () => {
-    if (!Seg.temCripto) return dizer('Este navegador não permite cifrar (precisa de ligação segura).', false);
-    const senha = await Seg.pedir({ titulo: 'Backup protegido', rotulo: 'Exportar', tipo: 'senha', confirmar: true,
+  /** Pergunta a palavra-passe (duas vezes) para um backup protegido. */
+  function pedirSenhaBackup() {
+    return Seg.pedir({ titulo: 'Backup protegido', rotulo: 'Continuar', tipo: 'senha', confirmar: true,
       texto: 'Escolhe uma palavra-passe (mínimo 6 caracteres). Sem ela não consegues abrir o ficheiro e ninguém a consegue recuperar. Escreve-a duas vezes.',
       validar: s => s.length >= 6 ? '' : 'Usa pelo menos 6 caracteres.' });
-    if (senha) exportar(senha);
+  }
+  /** «Partilhar backup»: pergunta se é protegido e abre a partilha do telemóvel. */
+  function partilharBackup() {
+    return new Promise(res => {
+      const d = $('dProt');
+      d.returnValue = '';
+      d.addEventListener('close', async () => {
+        const r = d.returnValue;
+        if (r === 'nao') await exportar(null, true);
+        else if (r === 'sim') {
+          if (!Seg.temCripto) dizer('Este navegador não permite cifrar (precisa de ligação segura).', false);
+          else { const senha = await pedirSenhaBackup(); if (senha) await exportar(senha, true); }
+        }
+        res();
+      }, { once: true });
+      d.showModal();
+    });
+  }
+  $('bPart').addEventListener('click', partilharBackup);
+  $('bExp').addEventListener('click', () => exportar(null, false));
+  $('bExpP').addEventListener('click', async () => {
+    if (!Seg.temCripto) return dizer('Este navegador não permite cifrar (precisa de ligação segura).', false);
+    const senha = await pedirSenhaBackup();
+    if (senha) exportar(senha, false);
   });
   function descarregar(nome, conteudo) {
     const a = document.createElement('a');

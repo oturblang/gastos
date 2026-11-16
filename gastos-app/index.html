@@ -67,6 +67,7 @@
   <div id="vMais" class="vista" hidden>
     <h2>Mais</h2>
     <ul class="menu">
+      <li><button type="button" data-ir="Movimentos"><b>Movimentos</b><small>Pesquisar e filtrar todos os movimentos</small></button></li>
       <li><button type="button" data-ir="Periodos"><b>Períodos</b><small>Viagens e fases com datas</small></button></li>
       <li><button type="button" data-ir="Calculos"><b>Cálculos</b><small>Como os valores são calculados</small></button></li>
       <li><button type="button" data-ir="Definicoes"><b>Definições</b><small>Valores iniciais, categorias, backup</small></button></li>
@@ -161,6 +162,8 @@
           <li>Faz também um <strong>antes de apagar tudo</strong>, antes de importar outro backup e antes de trocar de telemóvel.</li>
           <li>A app avisa-te aqui no Início quando passam X dias desde o último. Podes escolher o X mais abaixo (por defeito, 14).</li>
         </ul>
+        <h4>Partilhar backup</h4>
+        <p>O botão «Partilhar backup» abre a partilha do telemóvel: escolhes email, nuvem (Drive, iCloud) ou WhatsApp e o ficheiro segue num toque. O lembrete só conta como feito se a partilha for concluída. Se o teu navegador não permitir partilhar ficheiros, a app descarrega o ficheiro e tu guardas e envias à mão.</p>
         <h4>Backup protegido por palavra-passe</h4>
         <p>«Exportar backup protegido» cifra o ficheiro com uma palavra-passe que escolhes. Sem ela ninguém o abre, nem tu: <strong>se a perderes, o backup não se recupera</strong>. Para importar, a app pede a palavra-passe. Recomendo-o se vais guardar o ficheiro em email ou nuvem.</p>
         <h4>Onde guardar o ficheiro</h4>
@@ -175,7 +178,8 @@
         <p><strong>Atenção:</strong> importar <strong>substitui tudo</strong> o que está no aparelho de destino. Não é uma sincronização: os dois aparelhos não se atualizam sozinhos. Se registares em ambos, o que escreveste num não aparece no outro. Escolhe um aparelho como principal, ou exporta e importa sempre que mudares de aparelho.</p>
       </details>
       <p id="ultimo"></p>
-      <button id="bExp" type="button" class="primario">Exportar backup (JSON)</button>
+      <button id="bPart" type="button" class="primario">Partilhar backup</button>
+      <button id="bExp" type="button">Exportar backup (JSON)</button>
       <button id="bExpP" type="button">Exportar backup protegido</button>
       <button id="bImp" type="button">Importar backup</button>
       <input id="fImp" type="file" accept="application/json,.json" hidden>
@@ -206,6 +210,34 @@
     </details>
 
     <p class="mut"><a href="testes.html">Executar os testes automáticos dos cálculos</a> (não mexem nos teus dados).</p>
+  </div>
+
+  <div id="vMovimentos" class="vista" hidden>
+    <h2>Movimentos</h2>
+    <p id="mvVazio" class="vazio" hidden>Ainda não há movimentos. Quando registares alguns, podes pesquisá-los aqui.</p>
+    <div id="mvCorpo">
+      <label for="mvQ">Pesquisar</label>
+      <input id="mvQ" type="search" autocomplete="off" placeholder="descrição ou categoria">
+      <details class="caixa" id="mvFiltros">
+        <summary id="mvFiltrosT">Filtros</summary>
+        <label for="mvTipo">Tipo</label>
+        <select id="mvTipo"><option value="">Todos</option><option value="ganho">Ganhos</option><option value="gasto">Gastos</option><option value="investimento">Investimentos</option><option value="ajuste">Ajustes</option></select>
+        <label for="mvCat">Categoria</label>
+        <select id="mvCat"></select>
+        <label for="mvPer">Período (viagem)</label>
+        <select id="mvPer"></select>
+        <label for="mvMes">Mês</label>
+        <select id="mvMes"></select>
+        <label for="mvDe">Data de</label>
+        <input id="mvDe" type="date">
+        <label for="mvAte">Data até</label>
+        <input id="mvAte" type="date">
+      </details>
+      <button type="button" id="mvLimpar">Limpar pesquisa e filtros</button>
+      <p id="mvResumo" role="status"></p>
+      <ul id="mvLista" class="hlist"></ul>
+      <button type="button" id="mvMais" hidden>Mostrar mais</button>
+    </div>
   </div>
 
   <div id="vTabela" class="vista" hidden>
@@ -277,6 +309,18 @@
       <button type="button" id="amEd" class="primario">Editar</button>
       <button type="button" id="amAp" class="perigo">Apagar</button>
       <button value="cancel">Fechar</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dProt">
+  <form method="dialog">
+    <h3>Proteger o backup?</h3>
+    <p>Com palavra-passe, só tu abres o ficheiro. Sem ela, quem tiver o ficheiro vê os teus dados. Se perderes a palavra-passe, o backup não se recupera.</p>
+    <div class="coluna">
+      <button value="sim" class="primario">Com palavra-passe</button>
+      <button value="nao">Sem palavra-passe</button>
+      <button value="cancel">Cancelar</button>
     </div>
   </form>
 </dialog>
@@ -387,6 +431,7 @@
 <script src="js/poupanca.js"></script>
 <script src="js/invest.js"></script>
 <script src="js/periodos.js"></script>
+<script src="js/movimentos.js"></script>
 <script src="js/registo.js"></script>
 </body>
 </html>

@@ -158,6 +158,23 @@ const Calc = (() => {
     }
     return out.map(o => ({ key: o.key, n: o.n, dias: o.dias.size, semanas: o.semanas.size }));
   }
+  // ---------- Pesquisa e filtros ----------
+  const norm = t => String(t == null ? '' : t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  /** Filtra movimentos (mais recentes primeiro). f = { q, tipo, cat ('none' = sem categoria), per (id), de, ate }.
+      O texto procura na descrição e no nome da categoria, sem distinguir maiúsculas nem acentos; todas as palavras têm de aparecer. */
+  function filtrar(movs, cats, pers, f) {
+    const palavras = norm(f.q).split(/\s+/).filter(Boolean), p = f.per ? pers.find(x => x.id === Number(f.per)) : null;
+    const nomeCat = id => { const c = cats.find(x => x.id === id); return c ? c.name : ''; };
+    return movs.filter(m => {
+      if (f.tipo && m.type !== f.tipo) return false;
+      if (f.cat === 'none') { if (m.categoryId != null) return false; } else if (f.cat && m.categoryId !== Number(f.cat)) return false;
+      if (p && (m.date < p.start || m.date > p.end)) return false;
+      if (f.de && m.date < f.de) return false;
+      if (f.ate && m.date > f.ate) return false;
+      if (palavras.length) { const t = norm(m.desc) + ' ' + norm(nomeCat(m.categoryId)); if (!palavras.every(w => t.includes(w))) return false; }
+      return true;
+    }).sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : b.id - a.id);
+  }
   // ---------- Períodos (uma vista filtrada dos dias normais, nunca uma cópia) ----------
   const diasDe = p => diasEntre(p.start, p.end) + 1;
   const sobrepoe = (a, b) => a.start <= b.end && b.start <= a.end;
@@ -170,7 +187,7 @@ const Calc = (() => {
     return { dias, ganho, gasto, investimento, ajuste: somaTipo(movs, 'ajuste', p.start, p.end), sobra: ganho - gasto - investimento,
       mediaGasto: Math.round(gasto / dias), poupFim: total(s, movs, p.end).poup };
   }
-  return { gerarRecorrentes, frequencia, diasDe, sobrepoe, conflito, periodoDe, resumoPeriodo, textoSemana, ocorrencias, proxima, historico, progresso, TIPOS, addDays, diasEntre, diaSemana, efeito, serie, total, gastosMes, CONTAGEM, chave, inicioDe, fimDe, anterior, janela,
+  return { filtrar, gerarRecorrentes, frequencia, diasDe, sobrepoe, conflito, periodoDe, resumoPeriodo, textoSemana, ocorrencias, proxima, historico, progresso, TIPOS, addDays, diasEntre, diaSemana, efeito, serie, total, gastosMes, CONTAGEM, chave, inicioDe, fimDe, anterior, janela,
     rotulo, titulo, agrupar, evolucao, somaTipo, gastosPorCategoria, diasComInvestimento };
 })();
 if (typeof module !== 'undefined') module.exports = Calc;
